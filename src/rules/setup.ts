@@ -58,7 +58,6 @@ export function createPosition(setup: Setup): Position {
       w: setup.underdog ? (setup.underdog === "w" ? 1 : 3) : 2,
       b: setup.underdog ? (setup.underdog === "b" ? 1 : 3) : 2,
     },
-    rescueUsed: { w: false, b: false },
     revivalUsed: { w: false, b: false },
     captured: [],
     history: [],

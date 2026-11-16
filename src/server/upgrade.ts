@@ -1,6 +1,6 @@
 import { nearestSafeSquare, rescue } from "../rules/abilities";
 import { adjudicate } from "../rules/legal";
-import { finishTurn } from "../rules/transitions";
+import { positionKey, finishTurn } from "../rules/transitions";
 import type { Piece, Position, Side } from "../rules/types";
 import type { Match } from "../shared/protocol";
 interface LegacyRescue {
@@ -20,6 +20,10 @@ export function upgradeMatch(stored: Match): Match {
   };
   const pending = position.pending;
   delete position.pending;
+  if ("rescueUsed" in position) {
+    Reflect.deleteProperty(position, "rescueUsed");
+    position.repetitions = { [positionKey(position)]: 1 };
+  }
   const next: Match = {
     code: stored.code,
     seats: stored.seats,

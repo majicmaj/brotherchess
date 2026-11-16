@@ -58,13 +58,9 @@ function powerStatus(
   const on = (text: string) => ({ available: true, text });
   if (p.result) return off("Game over");
   if (!present) return off("Captured");
-  if (
-    (role === "b" && p.rescueUsed[side]) ||
-    (role === "n" && p.revivalUsed[side])
-  )
-    return off("Spent");
+  if (role === "n" && p.revivalUsed[side]) return off("Spent");
   if (role === "r") return targets ? on("Passive") : off("No allies");
-  if (role === "b") return targets ? on("Auto · 1×") : off("No cover");
+  if (role === "b") return targets ? on("Auto") : off("No cover");
   if (p.cooldown[side]) return off(`${p.cooldown[side]} turns`);
   if (!playing) return off("Preview");
   if (p.turn !== side) return off("Their turn");

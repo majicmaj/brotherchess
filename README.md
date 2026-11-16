@@ -34,19 +34,19 @@ rooks in place, with bishops on opposite colours and matching layouts for both s
 - **Barb / rook — Stop Skipping Leg Day:** friendly pieces immediately left and
   right of a rook gain one-square king-style moves and captures, instead of an
   ordinary move. Passive, no stacking, and no bonus king moves.
-- **Ethan B / bishop — Moving the Fucking Goalposts:** the first captured non-king
+- **Ethan B / bishop — Moving the Fucking Goalposts:** any captured non-king
   ally defended by a bishop before the move is rescued, if a safe adjacent square
   exists. The nearest empty, unattacked square is chosen automatically; orthogonal
-  squares precede diagonals, then file/rank order breaks ties. The attacker lands normally. Once per side, shared by both bishops. No available safe square means
-  the piece dies and the save remains. A rescued pawn cannot land on ranks 1 or 8.
+  squares precede diagonals, then file/rank order breaks ties. The attacker lands normally. Reusable while a bishop guards the victim. No available safe square means
+  the piece dies. A rescued pawn cannot land on ranks 1 or 8.
 - **Tushar / queen — Willing Sacrifice:** capture your own non-king pieces. Ethan
-  can rescue a protected sacrifice, spending the same once-per-side save.
+  can automatically relocate a protected sacrifice.
 
 An active power is part of that turn, followed by two ordinary turns before any
 other active power. The cooldown is shared by the side, not individual pieces.
 Barb and Ethan are passive. Underdog mode requires one ordinary turn for the
 underdog and three for the favourite; it is experimental, not a calibrated Elo
-handicap. Promotions and revival never replenish rescue/revival charges.
+handicap. Promotions and revival never replenish BigDoe’s revival charge.
 
 Castling, en passant and normal promotion are supported. Castling rights are lost
 when a rook is rescued. Captured promoted pawns return as ordinary pawns. Games are untimed. Existing timed rooms are upgraded without losing seats, board

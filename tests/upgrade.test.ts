@@ -57,7 +57,6 @@ test("an old pending rescue completes automatically exactly once during recovery
     next = upgradeMatch(legacy);
   assert.equal(JSON.stringify(legacy), original);
   assert.equal(next.revision, 1);
-  assert.equal(next.position.rescueUsed.w, true);
   assert.equal(next.position.cooldown.w, 2);
   assert.equal(next.position.turn, "b");
   assert.equal(next.position.history.length, 1);

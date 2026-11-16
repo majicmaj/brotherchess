@@ -106,7 +106,6 @@ export function nearestSafeSquare(
 export function rescue(p: Position, piece: Piece, to: Square): void {
   p.board[to] = { ...piece, moved: true };
   p.captured = p.captured.filter((victim) => victim.id !== piece.id);
-  p.rescueUsed[piece.side] = true;
   p.lastEffect = {
     name: "Ethan · Auto-save",
     text: `Saved → ${to}`,
