@@ -53,12 +53,6 @@ export function createPosition(setup: Setup): Position {
   return {
     board,
     turn: "w",
-    cooldown: { w: 0, b: 0 },
-    cooldownLength: {
-      w: setup.underdog ? (setup.underdog === "w" ? 1 : 3) : 2,
-      b: setup.underdog ? (setup.underdog === "b" ? 1 : 3) : 2,
-    },
-    revivalUsed: { w: false, b: false },
     captured: [],
     history: [],
     quietPlies: 0,

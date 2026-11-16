@@ -22,7 +22,6 @@ function accepted(p: Position, action: Action): Position | undefined {
 }
 function rallyActions(p: Position, move: Move, after: Position): Action[] {
   if (
-    p.cooldown[p.turn] ||
     p.board[move.from].role !== "k" ||
     Math.abs(Number(move.from[1]) - Number(move.to[1])) > 1 ||
     Math.abs(files.indexOf(move.from[0]) - files.indexOf(move.to[0])) > 1
@@ -75,12 +74,7 @@ function movesTo(p: Position, from: Square, to: Square): Action[] {
     const after = accepted(p, move);
     if (!after) continue;
     out.push(move, ...rallyActions(p, move, after));
-    if (
-      piece.role === "n" &&
-      !p.cooldown[p.turn] &&
-      !p.revivalUsed[p.turn] &&
-      to[1] === (p.turn === "w" ? "8" : "1")
-    )
+    if (piece.role === "n" && to[1] === (p.turn === "w" ? "8" : "1"))
       out.push({ ...move, revive: true });
   }
   return out;

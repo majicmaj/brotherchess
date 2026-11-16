@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { other, type Side } from "../rules/types";
-import { upgradeMatch } from "./upgrade";
+import { hasRetiredPowers, upgradeMatch } from "./upgrade";
 import type { Match } from "../shared/protocol";
 import { body, command, joinName, setup } from "./validation";
 import { createMatch, hashToken, newToken, perform, snapshot } from "./session";
@@ -33,7 +33,7 @@ export class MatchRoom extends DurableObject<Env> {
         if (
           "clocks" in stored ||
           "pending" in stored.position ||
-          "rescueUsed" in stored.position
+          hasRetiredPowers(stored.position)
         )
           await this.save(this.match);
       }
@@ -79,7 +79,6 @@ export class MatchRoom extends DurableObject<Env> {
       await hashToken(token),
       options.host,
       options.shuffled,
-      options.underdog,
     );
     await this.save(match);
     return Response.json({ code, token, side: options.host }, { status: 201 });

@@ -63,7 +63,6 @@ export function revival(p: Position, side: Side, count: number): number {
     p.board[available[i]] = { ...pawn, role: "p", moved: false };
     p.captured = p.captured.filter((x) => x.id !== pawn.id);
   }
-  p.revivalUsed[side] = true;
   p.lastEffect = {
     name: "BigDoe · Revival",
     roll: count,

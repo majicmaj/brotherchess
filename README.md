@@ -29,8 +29,8 @@ rooks in place, with bishops on opposite colours and matching layouts for both s
   to an empty square. The extra move cannot expose your king. Castling cannot rally.
 - **BigDoe / knight — Please Join VC:** when landing on the enemy back rank,
   optionally roll 1d6 minus 1 and revive up to that many captured pawns on empty
-  pawn-starting squares, from a-file to h-file. Once per side. BigDoe survives;
-  zero rolls and blocked/full home rows still spend the revival.
+  pawn-starting squares, from a-file to h-file. Reusable on every back-rank landing. BigDoe survives;
+  zero rolls and blocked/full home rows restore no pawns.
 - **Barb / rook — Stop Skipping Leg Day:** friendly pieces immediately left and
   right of a rook gain one-square king-style moves and captures, instead of an
   ordinary move. Passive, no stacking, and no bonus king moves.
@@ -42,18 +42,14 @@ rooks in place, with bishops on opposite colours and matching layouts for both s
 - **Tushar / queen — Willing Sacrifice:** capture your own non-king pieces. Ethan
   can automatically relocate a protected sacrifice.
 
-An active power is part of that turn, followed by two ordinary turns before any
-other active power. The cooldown is shared by the side, not individual pieces.
-Barb and Ethan are passive. Underdog mode requires one ordinary turn for the
-underdog and three for the favourite; it is experimental, not a calibrated Elo
-handicap. Promotions and revival never replenish BigDoe’s revival charge.
+Powers are part of the normal turn, with no cooldowns or per-game limits.
+Barb and Ethan are passive. BigDoe can roll again on every enemy back-rank landing.
 
 Castling, en passant and normal promotion are supported. Castling rights are lost
 when a rook is rescued. Captured promoted pawns return as ordinary pawns. Games are untimed. Existing timed rooms are upgraded without losing seats, board
-state or power charges; pending rescues complete automatically.
+state or captured pieces; pending rescues complete automatically.
 
-Repetition includes the board, castling/pawn movement rights, cooldowns, charges,
-en passant and pawn reserves. The fifty-move rule applies. Standard insufficient
+Repetition includes the board, castling/pawn movement rights, en passant and pawn reserves. The fifty-move rule applies. Standard insufficient
 material checks are unsafe with resurrection and auras, so only bare kings trigger
 an automatic material draw. Players can agree to a draw or resign.
 
