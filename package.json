@@ -1,43 +1,40 @@
 {
-  "name": "openchess",
+  "name": "brotherchess",
   "version": "0.1.0",
-  "description": "Free, open-source, no-sign-up chess: play the computer or people online, then get an engine-backed review and coaching — all in your browser, no AI services.",
-  "scripts": {
-    "build": "node scripts/build.js",
-    "start": "node --env-file-if-exists=.env server/index.js",
-    "dev": "node scripts/build.js --watch & node --env-file-if-exists=.env --watch server/index.js",
-    "test": "node --test test/*.test.js",
-    "prestart": "node scripts/build.js",
-    "check:tutorial": "node scripts/tutorial-seed.mjs .tutorial-seed.js && tsx scripts/tutorial-check.mts http://localhost:3000/#/review/seedgame01 --init .tutorial-seed.js --out .tutorial-check",
-    "build:static": "node scripts/build.js && rm -rf dist && cp -R public dist",
-    "verify:lessons": "node scripts/lessons/verify.mjs",
-    "generate:lessons": "node scripts/lessons/generate.mjs",
-    "deploy:cloudflare": "node scripts/deploy-cloudflare.mjs",
-    "calibrate:levels": "node scripts/calibrate-levels.mjs"
-  },
-  "keywords": [
-    "chess",
-    "stockfish",
-    "open-source",
-    "coach"
-  ],
-  "author": "",
+  "description": "Brotherhood chess with character abilities, durable multiplayer and a Lichess-style board",
   "license": "GPL-3.0-or-later",
   "type": "module",
-  "dependencies": {
-    "chess.js": "^1.4.0",
-    "chessground": "^9.2.1",
-    "esbuild": "^0.28.2",
-    "express": "^5.3.0",
-    "stockfish": "^19.0.1",
-    "ws": "^8.22.2"
+  "scripts": {
+    "dev": "npm run build && wrangler dev",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit",
+    "lint": "eslint src tests && node scripts/health.mjs && prettier --check src tests scripts *.json *.jsonc *.md .github",
+    "format": "node scripts/lock.mjs && prettier --write src tests scripts *.json *.jsonc *.md .github eslint.config.js",
+    "test": "tsx --test tests/*.test.ts",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build",
+    "deploy": "npm run build && wrangler deploy"
   },
-  "private": false,
-  "engines": {
-    "node": ">=22.9"
+  "dependencies": {
+    "@lichess-org/chessground": "^10.0.0"
   },
   "devDependencies": {
-    "playwright": "^1.65.0",
-    "tsx": "^4.23.15"
+    "@cloudflare/workers-types": "latest",
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "8.72.2",
+    "wrangler": "^4.158.0"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.1"
+    }
   }
 }

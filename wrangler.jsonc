@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "brotherchess",
+  "main": "src/server/worker.ts",
+  "compatibility_date": "2026-11-16",
+  "account_id": "43e28285fabdb1965465802f0d309016",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "not_found_handling": "single-page-application",
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "MatchRoom" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MatchRoom"] }],
+  "routes": [
+    { "pattern": "brotherchess.hobbyhood.app/*", "zone_name": "hobbyhood.app" },
+  ],
+  "ratelimits": [
+    {
+      "name": "CREATE_ROOM_LIMITER",
+      "namespace_id": "97011557",
+      "simple": { "limit": 10, "period": 60 },
+    },
+  ],
+  "vars": { "APP_ORIGIN": "https://brotherchess.hobbyhood.app" },
+  "observability": { "enabled": true },
+}
