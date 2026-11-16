@@ -59,7 +59,6 @@ export function setup(value: unknown): {
   name: string;
   host: Side;
   shuffled: boolean;
-  underdog?: Side;
 } {
   const row = object(value),
     name = playerName(row.name);
@@ -71,13 +70,10 @@ export function setup(value: unknown): {
         : crypto.getRandomValues(new Uint8Array(1))[0] % 2
           ? "w"
           : "b";
-  if (row.underdog !== undefined && !["w", "b"].includes(String(row.underdog)))
-    throw new Error("Invalid underdog.");
   return {
     name,
     host,
     shuffled: row.shuffled !== false,
-    ...(row.underdog ? { underdog: row.underdog as Side } : {}),
   };
 }
 export function playerName(value: unknown): string {

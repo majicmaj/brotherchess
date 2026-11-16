@@ -30,12 +30,11 @@ export function createMatch(
   tokenHash: string,
   host: Side,
   shuffled: boolean,
-  underdog?: Side,
 ): Match {
   const layout = shuffled
     ? randomLayout(() => randomInt(0x1000000) / 0x1000000)
     : undefined;
-  const position = createPosition({ shuffled, underdog, layout });
+  const position = createPosition({ shuffled, layout });
   position.repetitions[positionKey(position)] = 1;
   return {
     code,

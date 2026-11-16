@@ -7,11 +7,14 @@ interface LegacyRescue {
   piece: Piece;
   origin: string;
   actor: Side;
-  activePower: boolean;
   pawnOrCapture: boolean;
   notation: string;
   from: string;
   to: string;
+}
+const retired = ["rescueUsed", "cooldown", "cooldownLength", "revivalUsed"];
+export function hasRetiredPowers(position: Position): boolean {
+  return retired.some((key) => key in position);
 }
 // Upgrade old rooms in place: keep seats, board and resources; retire clocks.
 export function upgradeMatch(stored: Match): Match {
@@ -20,10 +23,9 @@ export function upgradeMatch(stored: Match): Match {
   };
   const pending = position.pending;
   delete position.pending;
-  if ("rescueUsed" in position) {
-    Reflect.deleteProperty(position, "rescueUsed");
-    position.repetitions = { [positionKey(position)]: 1 };
-  }
+  const changedRules = hasRetiredPowers(position);
+  for (const key of retired) Reflect.deleteProperty(position, key);
+  if (changedRules) position.repetitions = { [positionKey(position)]: 1 };
   const next: Match = {
     code: stored.code,
     seats: stored.seats,
@@ -45,7 +47,6 @@ export function upgradeMatch(stored: Match): Match {
     finishTurn(
       position,
       pending.actor,
-      pending.activePower,
       pending.pawnOrCapture,
       pending.notation + (to ? ` · saved → ${to}` : ""),
       pending.from,

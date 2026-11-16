@@ -69,22 +69,14 @@ function createForm(
     ["w", "White"],
     ["b", "Black"],
   ]);
-  const weaker = select([
-    ["", "Equal powers"],
-    ["w", "White gets more powers"],
-    ["b", "Black gets more powers"],
-  ]);
   const shuffled = el("input");
   shuffled.type = "checkbox";
   shuffled.checked = true;
   const shuffle = el("label", "toggle");
   shuffle.append(shuffled, el("span", "", "Shuffle the back rank"));
-  const row = el("div", "form-row");
-  row.append(field("Your side", side));
   const create = el("button", "primary", "Create a room");
   form.append(
-    row,
-    field("Power balance", weaker),
+    field("Your side", side),
     shuffle,
     create,
     el(
@@ -102,7 +94,6 @@ function createForm(
         name: name.value,
         side: side.value,
         shuffled: shuffled.checked,
-        ...(weaker.value ? { underdog: weaker.value } : {}),
       });
       remember(credential);
       enter(credential);

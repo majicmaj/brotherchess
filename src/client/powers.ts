@@ -58,10 +58,8 @@ function powerStatus(
   const on = (text: string) => ({ available: true, text });
   if (p.result) return off("Game over");
   if (!present) return off("Captured");
-  if (role === "n" && p.revivalUsed[side]) return off("Spent");
   if (role === "r") return targets ? on("Passive") : off("No allies");
   if (role === "b") return targets ? on("Auto") : off("No cover");
-  if (p.cooldown[side]) return off(`${p.cooldown[side]} turns`);
   if (!playing) return off("Preview");
   if (p.turn !== side) return off("Their turn");
   const ready = actions.some((a) =>
@@ -72,7 +70,7 @@ function powerStatus(
         : p.board[a.from]?.role === "q" && p.board[a.to]?.side === side,
   );
   if (!ready) return off(role === "n" ? "Back rank" : "No move");
-  return on(role === "n" ? "Ready · 1×" : "Ready");
+  return on("Ready");
 }
 function effectSquares(
   p: Position,

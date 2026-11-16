@@ -82,7 +82,7 @@ test("Barb grants a replacement king-style move only immediately left and right"
   assert.equal(hasAura(after, "b4"), false);
   assert.equal(canMove(after, "b4", "b3"), false);
 });
-test("Monkus rallies one adjacent non-king piece without captures and spends the shared cooldown", () => {
+test("Monkus rallies one adjacent non-king piece without captures", () => {
   const p = arena();
   add(p, "b2", "n");
   const result = transition(p, {
@@ -91,7 +91,6 @@ test("Monkus rallies one adjacent non-king piece without captures and spends the
   });
   assert.equal(result.board.a2.role, "k");
   assert.equal(result.board.c2.role, "n");
-  assert.equal(result.cooldown.w, 2);
   assert.equal(p.board.b2.role, "n");
   assert.equal(p.board.a1.moved, true);
   assert.throws(() =>
@@ -104,13 +103,6 @@ test("Monkus rallies one adjacent non-king piece without captures and spends the
       ...move("a1", "a2"),
       extra: { from: "b2", to: "c2" },
     }),
-  );
-  const hot = structuredClone(p);
-  hot.cooldown.w = 1;
-  assert.throws(
-    () =>
-      transition(hot, { ...move("a1", "a2"), extra: { from: "b2", to: "c2" } }),
-    /cooling/,
   );
 });
 test("Monkus cannot move into check and then use the rally to repair it", () => {
@@ -132,10 +124,7 @@ test("Tushar can sacrifice friendly pieces except Monkus", () => {
   const result = transition(p, move("d4", "d5"));
   assert.equal(result.board.d5.role, "q");
   assert.ok(result.captured.some((v) => v.id === victim.id));
-  assert.equal(result.cooldown.w, 2);
   assert.equal(canMove(p, "d4", "a1"), false);
-  p.cooldown.w = 1;
-  assert.equal(canMove(p, "d4", "d5"), false);
 });
 test("Tushar and Ethan combo relocates the protected sacrifice, can save another guarded piece later", () => {
   const p = arena();
@@ -145,11 +134,9 @@ test("Tushar and Ethan combo relocates the protected sacrifice, can save another
   const saved = transition(p, move("d4", "d5"));
   assert.equal(saved.board.c5.id, victim.id);
   assert.equal(saved.board.d5.role, "q");
-  assert.equal(saved.cooldown.w, 2);
   assert.equal(saved.turn, "b");
   assert.equal(saved.captured.length, 0);
   saved.turn = "w";
-  saved.cooldown.w = 0;
   add(saved, "b4", "b");
   const twice = transition(saved, move("d5", "c5"));
   assert.equal(twice.captured.length, 0);
@@ -214,8 +201,6 @@ test("BigDoe survives and restores only captured pawns, bounded by the roll and 
   });
   const result = transition(p, { ...move("b6", "c8"), revive: true }, 5);
   assert.equal(result.board.c8.role, "n");
-  assert.equal(result.revivalUsed.w, true);
-  assert.equal(result.cooldown.w, 2);
   assert.equal(
     Object.values(result.board).filter((v) => v.role === "p").length,
     4,
@@ -227,7 +212,7 @@ test("BigDoe survives and restores only captured pawns, bounded by the roll and 
     Object.keys(result.board).length,
   );
 });
-test("zero revival rolls spend the single charge; captured promoted pawns return as pawns", () => {
+test("zero revival rolls restore no pawns; captured promoted pawns return as pawns", () => {
   const p = arena();
   add(p, "b6", "n");
   p.captured = [
@@ -241,16 +226,10 @@ test("zero revival rolls spend the single charge; captured promoted pawns return
     },
   ];
   const zero = transition(p, { ...move("b6", "c8"), revive: true }, 0);
-  assert.equal(zero.revivalUsed.w, true);
   assert.equal(zero.captured.length, 1);
   const one = transition(p, { ...move("b6", "c8"), revive: true }, 1);
   assert.equal(one.board.a2.role, "p");
   assert.equal(one.board.a2.moved, false);
-  p.revivalUsed.w = true;
-  assert.throws(
-    () => transition(p, { ...move("b6", "c8"), revive: true }, 5),
-    /once/,
-  );
 });
 test("castling preserves the rook move and rejects attacked transit squares", () => {
   const p = arena();
@@ -281,7 +260,7 @@ test("en passant captures the correct pawn and allows its bishop-protected rescu
   assert.equal(captured.board.c5.side, "b");
   assert.equal(captured.enPassant, undefined);
 });
-test("checkmate uses variant moves and repetition distinguishes remaining charges", () => {
+test("checkmate uses variant moves and repetition includes pawn reserves", () => {
   let p = createPosition({ shuffled: false });
   for (const [a, b] of [
     ["f2", "f3"],
@@ -306,7 +285,7 @@ test("checkmate uses variant moves and repetition distinguishes remaining charge
   assert.equal(mate.result?.winner, "w");
   const fresh = createPosition({ shuffled: false }),
     key = positionKey(fresh);
-  fresh.revivalUsed.w = true;
+  fresh.captured.push({ ...fresh.board.a2, id: "reserve" });
   assert.notEqual(positionKey(fresh), key);
 });
 test("deterministic legal play preserves kings, immutability and unique piece identities", () => {
@@ -368,4 +347,51 @@ test("Ethan can save every guarded non-king role", () => {
     assert.equal(after.board.c5.role, role);
     assert.equal(after.captured.length, 0);
   }
+});
+
+test("Monkus can rally on consecutive turns without an ordinary-turn gap", () => {
+  let p = arena();
+  add(p, "b2", "n");
+  p = transition(p, { ...move("a1", "a2"), extra: { from: "b2", to: "c2" } });
+  p = transition(p, move("h8", "g8"));
+  const next = { ...move("a2", "b2"), extra: { from: "c2", to: "d2" } };
+  assert.ok(
+    legalActions(p).some((a) => JSON.stringify(a) === JSON.stringify(next)),
+  );
+  p = transition(p, next);
+  assert.equal(p.board.d2.role, "n");
+});
+test("Tushar can sacrifice on consecutive turns", () => {
+  let p = arena();
+  add(p, "d4", "q");
+  add(p, "d5", "p");
+  add(p, "c5", "p");
+  p = transition(p, move("d4", "d5"));
+  p = transition(p, move("h8", "h7"));
+  assert.ok(legalActions(p).some((a) => a.from === "d5" && a.to === "c5"));
+  p = transition(p, move("d5", "c5"));
+  assert.equal(p.captured.length, 2);
+});
+test("BigDoe can revive on repeated back-rank landings without a game limit", () => {
+  let p = arena();
+  add(p, "b6", "n");
+  p.captured = ["a2", "b2"].map((at) => ({
+    id: at,
+    side: "w",
+    role: "p",
+    base: "p",
+    home: at,
+    moved: true,
+  }));
+  p = transition(p, { ...move("b6", "c8"), revive: true }, 1);
+  p = transition(p, move("h8", "g8"));
+  p = transition(p, move("c8", "b6"));
+  p = transition(p, move("g8", "h8"));
+  assert.ok(
+    legalActions(p).some((a) => a.from === "b6" && a.to === "c8" && a.revive),
+  );
+  p = transition(p, { ...move("b6", "c8"), revive: true }, 1);
+  assert.equal(p.board.a2.role, "p");
+  assert.equal(p.board.b2.role, "p");
+  assert.equal(p.captured.length, 0);
 });

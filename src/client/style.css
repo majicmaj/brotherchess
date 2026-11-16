@@ -194,13 +194,6 @@ p {
   font-size: 0.82rem;
   color: #aaa;
 }
-.form-row {
-  display: flex;
-  gap: 10px;
-}
-.form-row > * {
-  flex: 1;
-}
 .toggle {
   display: flex;
   gap: 8px;
@@ -300,30 +293,6 @@ cg-board {
   justify-content: space-between;
   align-items: center;
   padding: 0 4px;
-}
-.cooldown {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 0.75rem;
-  color: #999;
-  padding: 12px 4px;
-  border-bottom: 1px solid var(--line);
-}
-.cooldown-bar {
-  display: inline-flex;
-  gap: 3px;
-  flex: none;
-}
-.cooldown-bar i {
-  width: 20px;
-  height: 7px;
-  border-radius: 1px;
-  background: #48453f;
-}
-.cooldown-bar .charged {
-  background: var(--green);
 }
 .character {
   position: relative;

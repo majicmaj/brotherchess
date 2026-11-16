@@ -125,9 +125,7 @@ export function canMove(p: Position, from: Square, to: Square): boolean {
     target = p.board[to];
   if (!piece || from === to || target?.role === "k") return false;
   if (target?.side === piece.side)
-    return (
-      piece.role === "q" && p.cooldown[piece.side] === 0 && attacks(p, from, to)
-    );
+    return piece.role === "q" && attacks(p, from, to);
   if (hasAura(p, from) && distance(from, to) === 1) return true;
   if (piece.role === "p") return pawnMove(p, from, to, piece);
   if (piece.role === "k" && canCastle(p, from, to)) return true;

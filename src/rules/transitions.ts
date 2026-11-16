@@ -69,11 +69,8 @@ function power(
   piece: Piece,
   friendlyCapture: boolean,
   roll: number,
-): boolean {
+): void {
   const side = piece.side;
-  const active = Boolean(move.extra || move.revive || friendlyCapture);
-  if (active && p.cooldown[side])
-    throw new Error("Your powers are cooling down.");
   if (move.extra) {
     if (
       piece.role !== "k" ||
@@ -86,12 +83,8 @@ function power(
     rally(p, move.to, move.extra);
   }
   if (move.revive) {
-    if (
-      piece.role !== "n" ||
-      move.to[1] !== (side === "w" ? "8" : "1") ||
-      p.revivalUsed[side]
-    )
-      throw new Error("BigDoe revives once, on the enemy back rank.");
+    if (piece.role !== "n" || move.to[1] !== (side === "w" ? "8" : "1"))
+      throw new Error("BigDoe revives on the enemy back rank.");
     revival(p, side, roll);
   }
   if (friendlyCapture)
@@ -99,7 +92,6 @@ function power(
       name: "Tushar · Sacrifice",
       text: "Friendly piece captured.",
     };
-  return active;
 }
 export function positionKey(p: Position): string {
   const roles = "pnbrqk",
@@ -134,10 +126,6 @@ export function positionKey(p: Position): string {
     cells.join(""),
     rights.join(""),
     p.turn,
-    p.cooldown.w,
-    p.cooldown.b,
-    +p.revivalUsed.w,
-    +p.revivalUsed.b,
     p.enPassant?.target ?? "-",
     reserve.join(","),
   ].join("|");
@@ -148,8 +136,6 @@ function clonePosition(p: Position): Position {
     board: Object.fromEntries(
       Object.entries(p.board).map(([at, piece]) => [at, { ...piece }]),
     ),
-    cooldown: { ...p.cooldown },
-    revivalUsed: { ...p.revivalUsed },
     captured: [...p.captured],
     history: [...p.history],
     repetitions: { ...p.repetitions },
@@ -158,15 +144,11 @@ function clonePosition(p: Position): Position {
 export function finishTurn(
   p: Position,
   actor: Side,
-  active: boolean,
   pawnOrCapture: boolean,
   notation: string,
   from: string,
   to: string,
 ): void {
-  p.cooldown[actor] = active
-    ? p.cooldownLength[actor]
-    : Math.max(0, p.cooldown[actor] - 1);
   p.quietPlies = pawnOrCapture ? 0 : p.quietPlies + 1;
   p.history.push({
     text: notation,
@@ -200,13 +182,7 @@ export function transition(
     p.captured.push({ ...victim });
   }
   executeMove(p, action);
-  const active = power(
-    p,
-    action,
-    original,
-    Boolean(victim?.side === original.side),
-    roll,
-  );
+  power(p, action, original, Boolean(victim?.side === original.side), roll);
   let notation = `${original.role.toUpperCase()} ${action.from}${victim ? "×" : "–"}${action.to}${action.extra ? ` + ${action.extra.from}–${action.extra.to}` : ""}${action.revive ? " · revive" : ""}`;
   const pawnOrCapture = Boolean(
     victim ||
@@ -221,14 +197,6 @@ export function transition(
     }
   }
   if (inCheck(p, piece.side)) throw new Error("Your king would be in check.");
-  finishTurn(
-    p,
-    original.side,
-    active,
-    pawnOrCapture,
-    notation,
-    action.from,
-    action.to,
-  );
+  finishTurn(p, original.side, pawnOrCapture, notation, action.from, action.to);
   return p;
 }

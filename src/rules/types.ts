@@ -29,9 +29,6 @@ export interface Entry {
 export interface Position {
   board: Record<Square, Piece>;
   turn: Side;
-  cooldown: Record<Side, number>;
-  cooldownLength: Record<Side, number>;
-  revivalUsed: Record<Side, boolean>;
   captured: Piece[];
   enPassant?: { target: Square; pawn: Square };
   lastMove?: [Square, Square];
@@ -43,7 +40,6 @@ export interface Position {
 }
 export interface Setup {
   shuffled: boolean;
-  underdog?: Side;
   layout?: Role[];
 }
 export const other = (side: Side): Side => (side === "w" ? "b" : "w");

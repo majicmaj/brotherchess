@@ -17,7 +17,7 @@ export function characterPanel(
     el("h3", "", "Powers"),
     el("span", "small muted", side === "w" ? "White" : "Black"),
   );
-  root.append(heading, cooldown(p, side));
+  root.append(heading);
   for (const role of ["k", "n", "r", "b", "q"] as const) {
     const character = characters[role],
       preview = powerPreview(p, side, role, actions, playing);
@@ -50,29 +50,7 @@ export function characterPanel(
     card.addEventListener("blur", () => onPreview());
     root.append(card);
   }
-  root.append(el("p", "power-hint", "Hover to preview · 1× = once per game"));
-}
-function cooldown(p: Position, side: Side): HTMLElement {
-  const left = p.cooldown[side],
-    total = p.cooldownLength[side],
-    row = el("div", "cooldown");
-  row.append(
-    el("span", "", left ? `Cooldown: ${left} turns` : "Cooldown: ready"),
-  );
-  const bar = el("span", "cooldown-bar");
-  bar.setAttribute("role", "meter");
-  bar.setAttribute("aria-label", "Power recharge");
-  bar.setAttribute("aria-valuemin", "0");
-  bar.setAttribute("aria-valuemax", String(total));
-  bar.setAttribute("aria-valuenow", String(total - left));
-  bar.setAttribute(
-    "aria-valuetext",
-    left ? `${left} turns remaining` : "Ready",
-  );
-  for (let i = 0; i < total; i++)
-    bar.append(el("i", i < total - left ? "charged" : ""));
-  row.append(bar);
-  return row;
+  root.append(el("p", "power-hint", "Hover to preview"));
 }
 export function ruleDialog(): void {
   const modal = el("dialog", "rules-dialog");
@@ -88,14 +66,14 @@ export function ruleDialog(): void {
     el(
       "p",
       "rule-note",
-      "Active powers share a cooldown: two ordinary turns. Barb and Ethan are passive. BigDoe revives once per side. Ethan saves every guarded non-king ally. A save needs an empty, unattacked square beside the capture; nearest first, with a fixed tie-break. No safe square = no save.",
+      "Powers have no use limits. Barb and Ethan are passive. Ethan saves every guarded non-king ally. A save needs an empty, unattacked square beside the capture; nearest first, with a fixed tie-break. No safe square = no save.",
     ),
   );
   modal.append(
     el(
       "p",
       "rule-note",
-      "Revived pawns fill empty home-row squares left to right. Shuffling keeps kings and rooks in place. The power-balance option changes cooldowns to one turn vs three.",
+      "Revived pawns fill empty home-row squares left to right. Shuffling keeps kings and rooks in place.",
     ),
   );
   modal.append(

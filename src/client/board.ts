@@ -200,18 +200,14 @@ export class Board {
     }
     const revive = candidates.find((a) => a.revive);
     if (revive) {
-      dialog(
-        "Revive the server?",
-        "Roll 0–5. Revive captured pawns at home. Once per game.",
-        [
-          { label: "Just move", action: () => this.play(ordinary) },
-          {
-            label: "Ping everyone · roll",
-            primary: true,
-            action: () => this.play(revive),
-          },
-        ],
-      );
+      dialog("Revive the server?", "Roll 0–5. Revive captured pawns at home.", [
+        { label: "Just move", action: () => this.play(ordinary) },
+        {
+          label: "Ping everyone · roll",
+          primary: true,
+          action: () => this.play(revive),
+        },
+      ]);
       return;
     }
     const victim = view.position.board[ordinary.to];
