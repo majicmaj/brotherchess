@@ -31,25 +31,26 @@
       <span id="connection" class="connection">Brotherhood rules</span>
     </header>
     <main class="layout">
-      <aside id="sidebar" class="sidebar"></aside>
+      <aside class="left-column">
+        <div id="sidebar" class="sidebar"></div>
+        <section
+          id="characters"
+          class="characters"
+          aria-label="Character abilities"
+        ></section>
+      </aside>
       <section
         id="game"
         class="game"
         data-orientation="w"
         aria-label="Chess game"
       >
-        <div id="player-top" class="player-bar">
-          <span class="muted">Your next terrible idea starts here.</span>
-        </div>
         <div class="board-frame brown cburnett">
           <div
             id="board"
             class="board"
             aria-label="Interactive chessboard"
           ></div>
-        </div>
-        <div id="player-bottom" class="player-bar">
-          <span class="muted">Normal chess. Personal problems.</span>
         </div>
         <div class="board-toolbar">
           <span id="notice" role="status" aria-live="polite"></span
@@ -65,20 +66,21 @@
             ⇅ Flip
           </button>
         </div>
+      </section>
+      <aside class="round-panel" aria-label="Players and moves">
+        <div id="player-top" class="player-bar">
+          <span class="muted">Opponent</span>
+        </div>
         <div class="moves-panel">
-          <div class="section-label">THE RECEIPTS</div>
+          <div class="section-label">MOVES</div>
           <div id="moves" class="moves">
-            <p class="small muted">
-              Create a room and send the link to a brother.
-            </p>
+            <p class="small muted">Your moves appear here.</p>
           </div>
         </div>
-      </section>
-      <aside
-        id="characters"
-        class="characters"
-        aria-label="Character abilities"
-      ></aside>
+        <div id="player-bottom" class="player-bar">
+          <span class="muted">You</span>
+        </div>
+      </aside>
     </main>
     <footer>
       Made for the Brotherhood · Based on OpenChess &amp; Lichess Chessground ·

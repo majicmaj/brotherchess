@@ -2,7 +2,7 @@ import { inCheck } from "../rules/movement";
 import { Chessground } from "@lichess-org/chessground";
 import type { Api } from "@lichess-org/chessground/api";
 import type { Key, Role as GroundRole } from "@lichess-org/chessground/types";
-import { actor, fen } from "../rules/legal";
+import { fen } from "../rules/legal";
 import { transition } from "../rules/transitions";
 import {
   type Action,
@@ -21,6 +21,8 @@ const groundRoles: Record<string, Role> = {
 };
 export class Board {
   private ground: Api;
+  private overlay = document.createElement("div");
+  private highlighted: [string[], string[]] = [[], []];
   private view?: Snapshot;
   private extras?: Move[];
   private shown?: Position;
@@ -45,6 +47,10 @@ export class Board {
       drawable: { enabled: true },
       events: { select: (key) => this.selected(key) },
     });
+    this.overlay.className = "power-overlay";
+    this.overlay.setAttribute("aria-hidden", "true");
+    container.parentElement!.append(this.overlay);
+    container.addEventListener("pointerdown", () => this.highlight([]));
   }
   update(view: Snapshot): void {
     this.view = view;
@@ -56,6 +62,7 @@ export class Board {
   }
   flip(): void {
     this.ground.toggleOrientation();
+    this.highlight(...this.highlighted);
   }
   orientation(side: "w" | "b"): void {
     this.ground.set({ orientation: side === "w" ? "white" : "black" });
@@ -68,7 +75,7 @@ export class Board {
     this.shown = position;
     const interactive = Boolean(
       this.view?.started &&
-      this.view.side === actor(position) &&
+      this.view.side === position.turn &&
       !position.result,
     );
     const dests = new Map<Key, Key[]>();
@@ -81,7 +88,7 @@ export class Board {
       }
     this.ground.set({
       fen: fen(position),
-      turnColor: actor(position) === "w" ? "white" : "black",
+      turnColor: position.turn === "w" ? "white" : "black",
       lastMove: position.lastMove as [Key, Key] | undefined,
       check: inCheck(position, position.turn)
         ? position.turn === "w"
@@ -89,37 +96,36 @@ export class Board {
           : "black"
         : false,
       movable: {
-        color:
-          interactive && !position.pending
-            ? this.view?.side === "w"
-              ? "white"
-              : "black"
-            : undefined,
+        color: interactive
+          ? this.view?.side === "w"
+            ? "white"
+            : "black"
+          : undefined,
         dests,
       },
       highlight: { lastMove: true, check: true },
     });
-    const shapes =
-      position.pending?.options.map((at) => ({
-        orig: at as Key,
-        brush: "green",
-      })) ?? [];
-    this.ground.setAutoShapes(shapes);
+    this.ground.setAutoShapes([]);
+    this.highlight([]);
   }
   private selected(key: Key): void {
-    const view = this.view;
-    if (!view) return;
-    if (
-      !view.position.result &&
-      view.position.pending &&
-      view.side === view.position.pending.owner &&
-      view.position.pending.options.includes(key)
-    ) {
-      this.play({ type: "rescue", to: key });
-      return;
-    }
     const piece = this.shown?.board[key];
     if (piece) this.select(piece.role);
+  }
+  highlight(squares: string[], origins: string[] = []): void {
+    if (this.extras) return;
+    this.highlighted = [squares, origins];
+    this.overlay.replaceChildren();
+    for (const at of new Set([...origins, ...squares])) {
+      const cell = document.createElement("div");
+      cell.className = "power-square" + (origins.includes(at) ? " source" : "");
+      const black = this.ground.state.orientation === "black";
+      const x = at.charCodeAt(0) - 97,
+        y = Number(at[1]) - 1;
+      cell.style.left = (black ? 7 - x : x) * 12.5 + "%";
+      cell.style.top = (black ? y : 7 - y) * 12.5 + "%";
+      this.overlay.append(cell);
+    }
   }
   private moved(from: Key, to: Key): void {
     const view = this.view;
@@ -178,25 +184,21 @@ export class Board {
     }
     const extras = candidates.filter((a) => a.extra);
     if (extras.length) {
-      dialog(
-        "Take action, bro",
-        "Move Monkus alone, or rally a teammate beside his new square.",
-        [
-          { label: "Just move Monkus", action: () => this.play(ordinary) },
-          {
-            label: "Rally the boys",
-            primary: true,
-            action: () => this.rally(extras),
-          },
-        ],
-      );
+      dialog("Rally?", "Move Monkus alone, or nudge a neighbour.", [
+        { label: "Just move Monkus", action: () => this.play(ordinary) },
+        {
+          label: "Rally the boys",
+          primary: true,
+          action: () => this.rally(extras),
+        },
+      ]);
       return;
     }
     const revive = candidates.find((a) => a.revive);
     if (revive) {
       dialog(
         "Revive the server?",
-        "Roll 1d6 − 1. Restore up to five captured pawns on empty starting squares. Once this game; BigDoe survives.",
+        "Roll 0–5. Revive captured pawns at home. Once per game.",
         [
           { label: "Just move", action: () => this.play(ordinary) },
           {
@@ -212,7 +214,7 @@ export class Board {
     if (victim?.side === view.side) {
       dialog(
         "Willing sacrifice",
-        `Capture your own ${roleNames[victim.role]}? If Ethan protects them and a safe square exists, they can be rescued.`,
+        `Capture your own ${roleNames[victim.role]}? Ethan may save them.`,
         [
           { label: "Cancel", action: () => this.cancel() },
           {
@@ -249,9 +251,7 @@ export class Board {
       turnColor: view.side === "w" ? "white" : "black",
       movable: { color: view.side === "w" ? "white" : "black", dests },
     });
-    this.notice(
-      "Choose a teammate beside Monkus and move them one square. Cancel to start again.",
-    );
+    this.notice("Nudge a neighbour 1 empty square.");
   }
   description(role: Role): string {
     return role === "p"

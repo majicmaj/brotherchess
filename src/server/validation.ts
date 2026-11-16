@@ -29,10 +29,6 @@ function step(value: unknown): Step {
 }
 export function action(value: unknown): Action {
   const row = object(value);
-  if (row.type === "rescue") {
-    if (!validSquare(row.to)) throw new Error("Invalid rescue square.");
-    return { type: "rescue", to: row.to };
-  }
   if (row.type !== "move") throw new Error("Unknown action.");
   if (row.revive !== undefined && typeof row.revive !== "boolean")
     throw new Error("Invalid revival.");
@@ -62,7 +58,6 @@ export function command(value: unknown): Command {
 export function setup(value: unknown): {
   name: string;
   host: Side;
-  minutes: number;
   shuffled: boolean;
   underdog?: Side;
 } {
@@ -76,15 +71,11 @@ export function setup(value: unknown): {
         : crypto.getRandomValues(new Uint8Array(1))[0] % 2
           ? "w"
           : "b";
-  const minutes = Number(row.minutes ?? 10);
-  if (![3, 5, 10, 15, 30].includes(minutes))
-    throw new Error("Choose a supported time control.");
   if (row.underdog !== undefined && !["w", "b"].includes(String(row.underdog)))
     throw new Error("Invalid underdog.");
   return {
     name,
     host,
-    minutes,
     shuffled: row.shuffled !== false,
     ...(row.underdog ? { underdog: row.underdog as Side } : {}),
   };

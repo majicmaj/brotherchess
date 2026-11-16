@@ -1,5 +1,11 @@
 import { canMove, bishopGuard, inCheck } from "./movement";
-import { promote, rally, rescueOptions, restore, revival } from "./abilities";
+import {
+  promote,
+  rally,
+  nearestSafeSquare,
+  rescue,
+  revival,
+} from "./abilities";
 import {
   distance,
   other,
@@ -90,8 +96,8 @@ function power(
   }
   if (friendlyCapture)
     p.lastEffect = {
-      name: "Willing Sacrifice",
-      text: "Tushar bans his own member for being in the way. Calls it maintenance.",
+      name: "Tushar · Sacrifice",
+      text: "Friendly piece captured.",
     };
   return active;
 }
@@ -174,7 +180,6 @@ export function finishTurn(
   });
   p.lastMove = [from, to];
   p.turn = other(actor);
-  delete p.pending;
   const key = positionKey(p);
   p.repetitions[key] = (p.repetitions[key] ?? 0) + 1;
 }
@@ -186,9 +191,6 @@ export function transition(
   if (before.result) throw new Error("This game has ended.");
   const p = clonePosition(before);
   delete p.lastEffect;
-  if (action.type === "rescue") return rescueTransition(p, action.to);
-  if (before.pending)
-    throw new Error("Ethan must finish moving the goalposts.");
   const original = assertMove(before, action),
     captureAt = victimSquare(before, action, original),
     victim = before.board[captureAt];
@@ -210,33 +212,18 @@ export function transition(
     Boolean(victim?.side === original.side),
     roll,
   );
-  const notation = `${original.role.toUpperCase()} ${action.from}${victim ? "×" : "–"}${action.to}${action.extra ? ` + ${action.extra.from}–${action.extra.to}` : ""}${action.revive ? " · revive" : ""}`;
+  let notation = `${original.role.toUpperCase()} ${action.from}${victim ? "×" : "–"}${action.to}${action.extra ? ` + ${action.extra.from}–${action.extra.to}` : ""}${action.revive ? " · revive" : ""}`;
   const pawnOrCapture = Boolean(
     victim ||
     original.role === "p" ||
     (action.extra && before.board[action.extra.from]?.role === "p"),
   );
   if (guarded && victim) {
-    const options = rescueOptions(p, victim, captureAt, original.side);
-    if (options.length) {
-      p.pending = {
-        owner: victim.side,
-        piece: { ...victim },
-        origin: captureAt,
-        options,
-        actor: original.side,
-        activePower: active,
-        pawnOrCapture,
-        notation,
-        from: action.from,
-        to: action.to,
-      };
-      return p;
+    const to = nearestSafeSquare(p, victim, captureAt, original.side);
+    if (to) {
+      rescue(p, victim, to);
+      notation += ` · saved → ${to}`;
     }
-    p.lastEffect = {
-      name: "No escape clause",
-      text: "Ethan looked for a loophole. Every adjacent square was blocked or attacked.",
-    };
   }
   if (inCheck(p, piece.side)) throw new Error("Your king would be in check.");
   finishTurn(
@@ -247,23 +234,6 @@ export function transition(
     notation,
     action.from,
     action.to,
-  );
-  return p;
-}
-function rescueTransition(p: Position, to: string): Position {
-  const pending = p.pending;
-  if (!pending) throw new Error("No rescue is waiting.");
-  restore(p, to);
-  if (inCheck(p, pending.actor))
-    throw new Error("That rescue exposes the king.");
-  finishTurn(
-    p,
-    pending.actor,
-    pending.activePower,
-    pending.pawnOrCapture,
-    pending.notation + ` · saved → ${to}`,
-    pending.from,
-    pending.to,
   );
   return p;
 }

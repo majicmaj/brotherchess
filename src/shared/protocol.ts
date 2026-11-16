@@ -8,9 +8,6 @@ export interface Match {
   seats: Partial<Record<Side, Seat>>;
   host: Side;
   position: Position;
-  clocks: Record<Side, number>;
-  increment: number;
-  clockSince: number;
   revision: number;
   created: number;
   started: boolean;
@@ -22,8 +19,6 @@ export interface Snapshot {
   names: Partial<Record<Side, string>>;
   host: Side;
   position: Position;
-  clocks: Record<Side, number>;
-  clockAt: number;
   revision: number;
   started: boolean;
   actions: Action[];

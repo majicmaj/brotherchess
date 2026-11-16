@@ -24,7 +24,7 @@ export function lobby(
       "muted",
       room
         ? "Take the open seat, or watch the carnage."
-        : "Chess. Five familiar idiots. Unfamiliar problems.",
+        : "Untimed chess. Five familiar idiots.",
     ),
     field("Display name", name),
   );
@@ -69,16 +69,6 @@ function createForm(
     ["w", "White"],
     ["b", "Black"],
   ]);
-  const time = select(
-    [
-      ["3", "3 + 2"],
-      ["5", "5 + 2"],
-      ["10", "10 + 2"],
-      ["15", "15 + 2"],
-      ["30", "30 + 2"],
-    ],
-    "10",
-  );
   const weaker = select([
     ["", "Equal powers"],
     ["w", "White gets more powers"],
@@ -90,7 +80,7 @@ function createForm(
   const shuffle = el("label", "toggle");
   shuffle.append(shuffled, el("span", "", "Shuffle the back rank"));
   const row = el("div", "form-row");
-  row.append(field("Your side", side), field("Minutes + seconds", time));
+  row.append(field("Your side", side));
   const create = el("button", "primary", "Create a room");
   form.append(
     row,
@@ -111,7 +101,6 @@ function createForm(
       const credential = await api<Credential>("/api/rooms", {
         name: name.value,
         side: side.value,
-        minutes: Number(time.value),
         shuffled: shuffled.checked,
         ...(weaker.value ? { underdog: weaker.value } : {}),
       });

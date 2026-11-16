@@ -36,8 +36,8 @@ rooks in place, with bishops on opposite colours and matching layouts for both s
   ordinary move. Passive, no stacking, and no bonus king moves.
 - **Ethan B / bishop — Moving the Fucking Goalposts:** the first captured non-king
   ally defended by a bishop before the move is rescued, if a safe adjacent square
-  exists. Its owner chooses an empty, unattacked square; the attacker still lands
-  normally. Once per side, shared by both bishops. No available safe square means
+  exists. The nearest empty, unattacked square is chosen automatically; orthogonal
+  squares precede diagonals, then file/rank order breaks ties. The attacker lands normally. Once per side, shared by both bishops. No available safe square means
   the piece dies and the save remains. A rescued pawn cannot land on ranks 1 or 8.
 - **Tushar / queen — Willing Sacrifice:** capture your own non-king pieces. Ethan
   can rescue a protected sacrifice, spending the same once-per-side save.
@@ -49,10 +49,8 @@ underdog and three for the favourite; it is experimental, not a calibrated Elo
 handicap. Promotions and revival never replenish rescue/revival charges.
 
 Castling, en passant and normal promotion are supported. Castling rights are lost
-when a rook is rescued. Captured promoted pawns return as ordinary pawns. Both
-sides' clocks pause only before the second player joins or after the game ends.
-During Ethan's choice, the rescued piece owner's clock runs. The capture actor
-receives one increment only after the whole capture/rescue turn completes.
+when a rook is rescued. Captured promoted pawns return as ordinary pawns. Games are untimed. Existing timed rooms are upgraded without losing seats, board
+state or power charges; pending rescues complete automatically.
 
 Repetition includes the board, castling/pawn movement rights, cooldowns, charges,
 en passant and pawn reserves. The fifty-move rule applies. Standard insufficient
@@ -65,12 +63,12 @@ an automatic material draw. Players can agree to a draw or resign.
 - `src/shared/`: protocol and character descriptions.
 - `src/server/`: authoritative Worker and SQLite-backed Durable Object per room.
 - `src/client/`: small framework-free Chessground application.
-- `tests/`: fast offline tests for critical legality, powers, clocks and authorization.
+- `tests/`: fast offline tests for critical legality, powers, recovery and authorization.
 - `scripts/`: bundling, formatting and hard quality gates.
 
 The server validates every command and revision, rolls revival dice after move
 validation, persists accepted state before broadcasting and uses WebSocket
-hibernation. Alarms enforce clocks even when browsers disconnect. Replays and
+hibernation. Legacy clock alarms are removed on recovery. Replays and
 client-provided board state are never trusted. Source code is public under GPLv3.
 
 ## Quality
