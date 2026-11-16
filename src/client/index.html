@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#161512" />
+    <meta
+      name="description"
+      content="Brotherhood chess. Five familiar idiots. Unfamiliar problems. Play a private game with friends."
+    />
+    <title>Brotherchess · Bring the boys</title>
+    <link rel="stylesheet" href="/app.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='53' font-size='54'%3E♞%3C/text%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">brother<span>chess</span><i></i></a>
+      <nav>
+        <a href="/">Play</a
+        ><button id="rules" class="text-button">How to play</button
+        ><a
+          href="https://github.com/majicmaj/brotherchess"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Source ↗</a
+        >
+      </nav>
+      <span id="connection" class="connection">Brotherhood rules</span>
+    </header>
+    <main class="layout">
+      <aside id="sidebar" class="sidebar"></aside>
+      <section
+        id="game"
+        class="game"
+        data-orientation="w"
+        aria-label="Chess game"
+      >
+        <div id="player-top" class="player-bar">
+          <span class="muted">Your next terrible idea starts here.</span>
+        </div>
+        <div class="board-frame brown cburnett">
+          <div
+            id="board"
+            class="board"
+            aria-label="Interactive chessboard"
+          ></div>
+        </div>
+        <div id="player-bottom" class="player-bar">
+          <span class="muted">Normal chess. Personal problems.</span>
+        </div>
+        <div class="board-toolbar">
+          <span id="notice" role="status" aria-live="polite"></span
+          ><button
+            id="cancel"
+            disabled
+            class="quiet"
+            title="Cancel the unsubmitted move"
+          >
+            Cancel</button
+          ><button id="faces" class="quiet" aria-pressed="false">Faces</button>
+          <button id="flip" class="quiet" aria-label="Flip board">
+            ⇅ Flip
+          </button>
+        </div>
+        <div class="moves-panel">
+          <div class="section-label">THE RECEIPTS</div>
+          <div id="moves" class="moves">
+            <p class="small muted">
+              Create a room and send the link to a brother.
+            </p>
+          </div>
+        </div>
+      </section>
+      <aside
+        id="characters"
+        class="characters"
+        aria-label="Character abilities"
+      ></aside>
+    </main>
+    <footer>
+      Made for the Brotherhood · Based on OpenChess &amp; Lichess Chessground ·
+      <a href="https://github.com/majicmaj/brotherchess">GPLv3 source</a>
+    </footer>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

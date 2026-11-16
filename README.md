@@ -1,132 +1,110 @@
-# OpenChess
+# Brotherchess
 
-Free, open-source chess. **No sign-up, no ads, no paywall, no AI services or API keys.**
+Brotherhood chess with five character abilities, private multiplayer rooms and a
+Lichess-style interface. A GPLv3 fork of [OpenChess](https://github.com/caydenchapple/openchess),
+using the actual [Lichess Chessground](https://github.com/lichess-org/chessground) board.
+The custom game rules, interface and durable room implementation replace the
+standard-chess coaching and analysis features from the upstream starter.
 
-- ♞ **Play the computer** — 18 levels from about 400 up to full strength, measured by self-play on Stockfish's Elo scale; the top levels are named after champions (Spassky, Polgár, Karpov, Anand, Kasparov, Carlsen)
-- ♚ **Bobby Fischer bot** — plays his repertoire (1.e4; the Najdorf and King's Indian as Black, including the opening of the "Game of the Century") with his taste for bishops and the initiative, at his peak strength
-- 🌐 **Play a friend online with a code** — host a game and share the 6-letter code, or join with one. No public matchmaking. Draw offers, and takebacks the opponent has to accept
-- 📊 **Post-game review** — every move rated (best → blunder), accuracy by phase, evaluation graph, opening detection, estimated performance rating
-- 🎓 **Built-in coach** (plain code, no AI model) — game summary, strengths, three personal lessons with drills, an explanation of each key mistake, opening notes, "position insight", and a training plan
-- 📚 **Training that fits you** — you don't pick lessons. Each session is built from your ratings, your reviewed games and how you solve exercises, at a difficulty you should solve about 3 times in 4, with spaced repetition and a daily streak
-- 🧭 **Light-touch teaching** — a controls card, one-time tips, a 3-step coach walk-through of your first review, and a "?" how-to-play panel (plan in [docs/GAME_BRIEF.md](docs/GAME_BRIEF.md))
-- 🧩 **Train on your own mistakes** — every blunder becomes a puzzle
-- 🔒 **Private** — games, ratings and settings live in your browser's `localStorage`
+## Run
 
-## Run it
+Node 24 or newer:
 
-Requires Node 22.9+.
-
-```bash
-npm install
-npm start        # builds the client and serves http://localhost:3000
+```sh
+npm ci
+npm run dev
 ```
 
-Other commands: `npm run dev` (watch mode), `npm test`, `docker build -t openchess .`, and — with the server running — `npm run check:tutorial` (walks the first-review coach on desktop and two phone shapes with Playwright; needs `npx playwright install chromium` once).
+The local Worker includes persistent SQLite-backed Durable Objects. Create a room,
+send its URL to a friend and play. Refreshing/reconnecting restores the exact game.
+Seat keys stay in each player's browser and are never part of invite links.
 
-## How it works
+## Brotherhood rules
 
-```
-browser                                          server (Node, ~500 lines)
-├─ chessground + chess.js   board & rules        ├─ Express: static files
-├─ Stockfish 19 lite (WASM) play + analysis      └─ ws: matchmaking, rooms, server-side clocks
-├─ analysis-core.js         review maths
-├─ coach.js + opening-notes.js   the coach
-└─ localStorage             games, ratings
-```
+Ordinary chess movement, check and checkmate apply. Shuffled setups keep kings and
+rooks in place, with bishops on opposite colours and matching layouts for both sides.
 
-**Review maths** (`client/src/analysis-core.js`): Stockfish evaluates every position at depth 12 (lite
-network). Win-probability curve and per-move accuracy follow Lichess' formulas; move classes come from
-win-% lost (<2 excellent, <5 good, <10 inaccuracy, <20 mistake, else blunder). Mistake themes (hung
-piece, missed tactic/mate, allowed mate, blown advantage, opening/endgame errors) are detected from the
-engine's best moves and replies using the rules of chess.
-The **performance rating is a rough estimate** from average centipawn loss and can be off by hundreds of
-points on short games; depth 12 on the lite network can also misjudge very close calls.
+- **Monkus / king — Motivational Wank:** after a safe normal one-square king move,
+  optionally move one adjacent friendly non-king piece one square in any direction
+  to an empty square. The extra move cannot expose your king. Castling cannot rally.
+- **BigDoe / knight — Please Join VC:** when landing on the enemy back rank,
+  optionally roll 1d6 minus 1 and revive up to that many captured pawns on empty
+  pawn-starting squares, from a-file to h-file. Once per side. BigDoe survives;
+  zero rolls and blocked/full home rows still spend the revival.
+- **Barb / rook — Stop Skipping Leg Day:** friendly pieces immediately left and
+  right of a rook gain one-square king-style moves and captures, instead of an
+  ordinary move. Passive, no stacking, and no bonus king moves.
+- **Ethan B / bishop — Moving the Fucking Goalposts:** the first captured non-king
+  ally defended by a bishop before the move is rescued, if a safe adjacent square
+  exists. Its owner chooses an empty, unattacked square; the attacker still lands
+  normally. Once per side, shared by both bishops. No available safe square means
+  the piece dies and the save remains. A rescued pawn cannot land on ranks 1 or 8.
+- **Tushar / queen — Willing Sacrifice:** capture your own non-king pieces. Ethan
+  can rescue a protected sacrifice, spending the same once-per-side save.
 
-**The coach** (`client/src/coach.js`): explanations are assembled from engine facts — what the better
-move was and what it does (captures, gives check, develops, castles), what your opponent could capture
-after your move, how the evaluation changed. Lessons are picked from your most frequent mistake themes
-(with an example move from your game) and phase accuracy; the training plan is built from your stats
-across games. `opening-notes.js` holds hand-written ideas/plans/pitfalls for the ~100 openings in
-`openings.js`. It covers the common cases only; for anything unusual, trust the engine numbers.
+An active power is part of that turn, followed by two ordinary turns before any
+other active power. The cooldown is shared by the side, not individual pieces.
+Barb and Ethan are passive. Underdog mode requires one ordinary turn for the
+underdog and three for the favourite; it is experimental, not a calibrated Elo
+handicap. Promotions and revival never replenish rescue/revival charges.
 
-**Ratings.** A local Elo kept per browser, separate pools for computer and online games. Not comparable
-with FIDE/Lichess/Chess.com and not verifiable by others — there are no accounts, by design. Games with a
-hint or takeback are unrated.
+Castling, en passant and normal promotion are supported. Castling rights are lost
+when a rook is rescued. Captured promoted pawns return as ordinary pawns. Both
+sides' clocks pause only before the second player joins or after the game ends.
+During Ethan's choice, the rescued piece owner's clock runs. The capture actor
+receives one increment only after the whole capture/rescue turn completes.
 
-**Online play.** The server is authoritative: it validates every move with chess.js, runs the clocks,
-handles resign / draw offers / flagging, and gives a disconnected player 45 s to reconnect. Players are
-just a random id + display name from the browser. There is no chat (nothing to moderate).
+Repetition includes the board, castling/pawn movement rights, cooldowns, charges,
+en passant and pawn reserves. The fifty-move rule applies. Standard insufficient
+material checks are unsafe with resurrection and auras, so only bare kings trigger
+an automatic material draw. Players can agree to a draw or resign.
 
-## Hosting notes
+## Architecture
 
-- Single Node process; rooms live in memory (restart = ongoing online games end).
-- WebSocket and HTTP share one port; a reverse proxy must pass `Upgrade` headers on `/ws/<CODE>`.
-- Optional env: `PORT` (default 3000), `ALLOWED_ORIGINS` (extra WebSocket origins, comma separated).
-- Stockfish is served from `/vendor/stockfish/` (≈3.5 MB, cached for a week).
-- Everything else (engine, review, coach) runs in the player's browser, so hosting costs almost nothing.
+- `src/rules/`: pure shared TypeScript rules; no network or browser dependencies.
+- `src/shared/`: protocol and character descriptions.
+- `src/server/`: authoritative Worker and SQLite-backed Durable Object per room.
+- `src/client/`: small framework-free Chessground application.
+- `tests/`: fast offline tests for critical legality, powers, clocks and authorization.
+- `scripts/`: bundling, formatting and hard quality gates.
 
-## Training
+The server validates every command and revision, rolls revival dice after move
+validation, persists accepted state before broadcasting and uses WebSocket
+hibernation. Alarms enforce clocks even when browsers disconnect. Replays and
+client-provided board state are never trusted. Source code is public under GPLv3.
 
-`client/src/lessons-data.js` holds the topics (short lessons plus exercises), `lessons-logic.js` the player model, and `views/learn.js` the screens.
-There is no lesson menu: `planSession` builds each session. Every topic has a skill rating for you and every exercise a difficulty on the same
-Elo-like scale; sessions pick exercises you should solve about 3 times in 4, steer toward the mistakes found in your reviewed games
-(hung pieces → free pieces, missed tactics → forks/skewers/pins, …), bring missed exercises back after 1/3/7/14/30 days, and show a short lesson
-only the first time a topic comes up (never for things far below your level). Exercises with one best answer were generated and checked with
-Stockfish 19: `npm run generate:lessons` rebuilds them, `npm run verify:lessons` re-checks all of them. The teaching text is ours and summarises
-widely used training ideas (pattern recognition, spaced repetition, a candidate-move routine, early endgame study, learning from your own games).
-It is not a promise of results.
+## Quality
 
-## Computer levels
-
-Strength is set by a node budget (not time), so a slow phone plays as strongly as a laptop. `node scripts/calibrate-grid.mjs` plays many engine settings
-against each other and fits one rating scale (Bradley–Terry), anchored so that Stockfish's own limiter at UCI_Elo 2000 (60k nodes) = 2000; the levels use
-the setting that lands on each Elo. Measured on that scale: a purely random mover ≈ 800, 50% random moves ≈ 1450, one node ≈ 1870, 1k nodes ≈ 2250,
-10k ≈ 2680, 100k ≈ 2985. `npm run calibrate:levels` then checks neighbouring levels head to head (16 games each): every level beat the one below it.
-What to keep in mind: each number is good to about ±100; the spacing between neighbouring levels is approximate (levels weakened by random mistakes win or lose
-very lopsidedly against each other); the Elo is Stockfish's scale, not Chess.com, Lichess or FIDE; and the lowest level is simply a random mover.
-The legends are set to the peak rating of the player they are named after: that is their strength, not their style. Only Bobby Fischer has a style
-(see `client/src/fischer.js` for exactly what that means).
-
-## Deploying to Cloudflare (site + online rooms)
-
-```bash
-npx wrangler login
-npm run deploy:cloudflare      # deploys the room server (Worker + Durable Object in worker/) and the static site (Pages)
+```sh
+npm run format
+npm run check
+npx wrangler deploy --dry-run
 ```
 
-The Worker runs the same room code as the Node server, one Durable Object per room code, and `dist/config.js` tells the site where it is,
-so online games work from the static site. Other static hosts: `npm run build:static`, upload `dist/`, and deploy the Worker separately.
+Strict TypeScript, no unused variables, cyclomatic complexity at most 20, nesting
+at most three and no tracked text file above 800 lines. The generated lockfile is
+compacted by `node scripts/lock.mjs` after dependency changes. Critical tests are
+offline; UI snapshot tests are intentionally absent.
 
+## Deploy
 
-
-Everything except online play runs in the browser, so `dist/` can be hosted anywhere static:
-
-```bash
-npm run build:static                 # builds the client and copies public/ to dist/
-npx zephyr-cli deploy ./dist         # uploads it to Zephyr Cloud (org/project are set in zephyr.config.mjs)
+```sh
+npm run deploy
 ```
 
-Or `npx zephyr-cli deploy ./dist` for Zephyr Cloud. On a static host there is no game server, so the "Play people online" card says it is unavailable and play against
-the computer, reviews, coaching and training all work. For online play, run `npm start` on a Node host with WebSocket support.
+`wrangler.jsonc` deploys only `brotherchess.hobbyhood.app/*`, preserving the existing
+wildcard DNS and unrelated routes. The existing proxied wildcard DNS covers this
+hostname. Worker assets serve the static client; `/api/*` reaches the room service.
+Keep Cloudflare credentials outside Git. Deployment uses the operator's existing
+Cloudflare authorization or a scoped `CLOUDFLARE_API_TOKEN` environment variable.
 
-## Project layout
+## License and credits
 
-```
-server/      index.js (HTTP + WebSocket) · rooms.js (games, lobby, clocks)
-client/src/  main.js router · views/* · engine.js · analysis*.js · coach.js · opening-notes.js
-             teaching.js + review-steps.js + tutorial/ (tutorial kit: coach overlay, tips, how-to panel)
-             board.js · store.js · rating.js · openings.js · stats.js
-scripts/build.js   bundles the client with esbuild, copies Stockfish + chessground CSS into public/
-test/        node:test suites (rooms, websocket, review maths, coach)
-```
+GPL-3.0-or-later; see LICENSE. Retains the OpenChess fork history and attribution.
+Chessground is GPL-3.0-or-later. Its included cburnett piece artwork is by
+Colin M. L. Burnett, licensed GPL-2.0-or-later. Serve this repository's source link
+and preserve notices when redistributing. No standard Stockfish analysis is shown:
+standard chess engines do not understand Brotherhood's special rules.
 
-## Contributing
-
-Issues and PRs welcome. Ideas: more openings and notes, richer tactic detection (forks, pins, skewers)
-in `coach.js`, endgame trainer, puzzle import, i18n, persistence for online games, a stronger (full
-NNUE) engine option.
-
-## License
-
-GPL-3.0-or-later (see `LICENSE`). Stockfish and chessground are GPL-3.0; chess.js is BSD-2-Clause;
-chessground's cburnett piece set is by Colin M.L. Burnett (GPL-2.0+).
+The optional Faces theme uses community Discord profile portraits; see
+`assets/avatars/NOTICE.md`. Classic chess artwork remains available by default.

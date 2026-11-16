@@ -1,0 +1,13 @@
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' wss://brotherchess.hobbyhood.app ws://127.0.0.1:8790 ws://localhost:8790; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Cross-Origin-Opener-Policy: same-origin
+
+/app.js
+  Cache-Control: public, max-age=0, must-revalidate
+/app.css
+  Cache-Control: public, max-age=0, must-revalidate
+/avatars/*
+  Cache-Control: public, max-age=86400
