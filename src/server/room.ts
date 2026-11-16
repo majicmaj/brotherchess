@@ -1,15 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
 import { other, type Side } from "../rules/types";
+import { upgradeMatch } from "./upgrade";
 import type { Match } from "../shared/protocol";
 import { body, command, joinName, setup } from "./validation";
-import {
-  createMatch,
-  flag,
-  hashToken,
-  newToken,
-  perform,
-  snapshot,
-} from "./session";
+import { createMatch, hashToken, newToken, perform, snapshot } from "./session";
 export interface Env {
   ROOMS: DurableObjectNamespace<MatchRoom>;
   ASSETS: Fetcher;
@@ -32,7 +26,13 @@ export class MatchRoom extends DurableObject<Env> {
       const rows = ctx.storage.sql
         .exec<{ data: string }>("SELECT data FROM room WHERE id=1")
         .toArray();
-      if (rows[0]) this.match = JSON.parse(rows[0].data) as Match;
+      await ctx.storage.deleteAlarm();
+      if (rows[0]) {
+        const stored = JSON.parse(rows[0].data) as Match;
+        this.match = upgradeMatch(stored);
+        if ("clocks" in stored || "pending" in stored.position)
+          await this.save(this.match);
+      }
     });
   }
   async fetch(request: Request): Promise<Response> {
@@ -41,7 +41,7 @@ export class MatchRoom extends DurableObject<Env> {
         return await this.upgradeSocket(request);
       if (request.method === "GET")
         return this.match
-          ? Response.json(snapshot(this.match, Date.now()))
+          ? Response.json(snapshot(this.match))
           : Response.json({ error: "Room not found." }, { status: 404 });
       return await this.ctx.blockConcurrencyWhile(async () => {
         try {
@@ -74,7 +74,6 @@ export class MatchRoom extends DurableObject<Env> {
       options.name,
       await hashToken(token),
       options.host,
-      options.minutes,
       options.shuffled,
       options.underdog,
     );
@@ -96,7 +95,6 @@ export class MatchRoom extends DurableObject<Env> {
       next = structuredClone(match);
     next.seats[side] = { name, tokenHash: await hashToken(token) };
     next.started = true;
-    next.clockSince = Date.now();
     next.revision++;
     await this.save(next);
     this.broadcast();
@@ -130,7 +128,7 @@ export class MatchRoom extends DurableObject<Env> {
       window: Date.now(),
       count: 0,
     } satisfies Attachment);
-    server.send(JSON.stringify(snapshot(match, Date.now(), side)));
+    server.send(JSON.stringify(snapshot(match, side)));
     return new Response(null, {
       status: 101,
       webSocket: pair[0],
@@ -149,14 +147,14 @@ export class MatchRoom extends DurableObject<Env> {
       const input = command(JSON.parse(payload));
       if (input.type === "sync") {
         if (this.match)
-          ws.send(JSON.stringify(snapshot(this.match, Date.now(), auth.side)));
+          ws.send(JSON.stringify(snapshot(this.match, auth.side)));
         return;
       }
       if (!auth.side) throw new Error("Spectators cannot play.");
       await this.ctx.blockConcurrencyWhile(async () => {
         try {
           if (!this.match) throw new Error("Room not found.");
-          await this.save(perform(this.match, input, auth.side!, Date.now()));
+          await this.save(perform(this.match, input, auth.side!));
           this.broadcast();
         } catch (error) {
           this.sendError(ws, error);
@@ -174,7 +172,6 @@ export class MatchRoom extends DurableObject<Env> {
           JSON.stringify(
             snapshot(
               this.match,
-              Date.now(),
               (ws.deserializeAttachment() as Attachment).side,
             ),
           ),
@@ -200,16 +197,10 @@ export class MatchRoom extends DurableObject<Env> {
     );
     await this.ctx.storage.sync();
     this.match = match;
-    if (match.started && !match.position.result) {
-      const clock = match.position.pending?.owner ?? match.position.turn;
-      await this.ctx.storage.setAlarm(
-        Math.max(Date.now() + 1, match.clockSince + match.clocks[clock]),
-      );
-    } else await this.ctx.storage.deleteAlarm();
   }
   private broadcast(): void {
     if (!this.match) return;
-    const view = snapshot(this.match, Date.now());
+    const view = snapshot(this.match);
     for (const ws of this.ctx.getWebSockets()) {
       try {
         const auth = ws.deserializeAttachment() as Attachment;
@@ -220,13 +211,7 @@ export class MatchRoom extends DurableObject<Env> {
     }
   }
   async alarm(): Promise<void> {
-    await this.ctx.blockConcurrencyWhile(async () => {
-      if (!this.match) return;
-      const next = structuredClone(this.match);
-      flag(next, Date.now());
-      await this.save(next);
-      this.broadcast();
-    });
+    await this.ctx.storage.deleteAlarm();
   }
   webSocketClose(ws: WebSocket, code: number, reason: string): void {
     ws.close([1005, 1006, 1015].includes(code) ? 1000 : code, reason);

@@ -2,7 +2,7 @@
 
 A GPLv3 fork of OpenChess for Brotherhood's custom chess variant. Keep upstream
 attribution. Use Chessground for presentation and a shared TypeScript rules engine.
-The multiplayer server is authoritative for moves, identities, clocks and dice.
+The multiplayer server is authoritative for moves, identities and dice.
 
 ## Hard quality gates
 
@@ -22,7 +22,7 @@ all tests offline and fast. Do not introduce UI snapshot tests.
 - scripts: quality and build tools.
 
 Persist every accepted turn before broadcasting. Reject stale revisions and
-unauthorized actions. Reconnection restores the exact clocks, board, rescue charge,
+unauthorized actions. Reconnection restores the exact board, rescue charge,
 revival state, cooldown and captured pieces. Never trust client dice. Preserve
 Cloudflare's existing wildcard route; deploy only the exact Brotherchess hostname.
 Never commit credentials, private Discord transcripts, or personal research data.

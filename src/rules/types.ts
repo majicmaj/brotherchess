@@ -19,23 +19,7 @@ export interface Move extends Step {
   extra?: Step;
   revive?: boolean;
 }
-export interface Rescue {
-  type: "rescue";
-  to: Square;
-}
-export type Action = Move | Rescue;
-export interface PendingRescue {
-  owner: Side;
-  piece: Piece;
-  origin: Square;
-  options: Square[];
-  actor: Side;
-  activePower: boolean;
-  pawnOrCapture: boolean;
-  notation: string;
-  from: Square;
-  to: Square;
-}
+export type Action = Move;
 export interface Entry {
   text: string;
   side: Side;
@@ -51,7 +35,6 @@ export interface Position {
   revivalUsed: Record<Side, boolean>;
   captured: Piece[];
   enPassant?: { target: Square; pawn: Square };
-  pending?: PendingRescue;
   lastMove?: [Square, Square];
   lastEffect?: { name: string; text: string; roll?: number };
   history: Entry[];

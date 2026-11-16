@@ -1,4 +1,4 @@
-import { actor, applyAction, legalActions } from "../rules/legal";
+import { applyAction, legalActions } from "../rules/legal";
 import { positionKey, transition } from "../rules/transitions";
 import { createPosition, randomLayout } from "../rules/setup";
 import { other, type Side } from "../rules/types";
@@ -29,7 +29,6 @@ export function createMatch(
   name: string,
   tokenHash: string,
   host: Side,
-  minutes: number,
   shuffled: boolean,
   underdog?: Side,
 ): Match {
@@ -43,42 +42,18 @@ export function createMatch(
     seats: { [host]: { name, tokenHash } },
     host,
     position,
-    clocks: { w: minutes * 60_000, b: minutes * 60_000 },
-    increment: 2000,
-    clockSince: 0,
     revision: 0,
     created: Date.now(),
     started: false,
   };
 }
-export function liveClocks(match: Match, now: number): Record<Side, number> {
-  const clocks = { ...match.clocks };
-  if (match.started && !match.position.result) {
-    const side = actor(match.position);
-    clocks[side] = Math.max(0, clocks[side] - (now - match.clockSince));
-  }
-  return clocks;
-}
-export function flag(match: Match, now: number): boolean {
-  if (!match.started || match.position.result) return false;
-  const side = actor(match.position),
-    clocks = liveClocks(match, now);
-  if (clocks[side] > 0) return false;
-  match.clocks = clocks;
-  match.clockSince = now;
-  match.position.result = { winner: other(side), reason: "time" };
-  match.revision++;
-  return true;
-}
-export function snapshot(match: Match, now: number, side?: Side): Snapshot {
+export function snapshot(match: Match, side?: Side): Snapshot {
   return {
     type: "state",
     code: match.code,
     names: { w: match.seats.w?.name, b: match.seats.b?.name },
     host: match.host,
     position: match.position,
-    clocks: liveClocks(match, now),
-    clockAt: now,
     revision: match.revision,
     started: match.started,
     actions: match.started ? legalActions(match.position) : [],
@@ -90,7 +65,6 @@ export function perform(
   match: Match,
   command: Command,
   side: Side,
-  now: number,
   roll: () => number = () => randomInt(6),
 ): Match {
   if (command.type === "sync") return match;
@@ -99,9 +73,6 @@ export function perform(
   if (!match.started || match.position.result)
     throw new Error("This game is not active.");
   const next = structuredClone(match);
-  if (flag(next, now)) return next;
-  next.clocks = liveClocks(match, now);
-  next.clockSince = now;
   if (command.type === "action") return play(next, command, side, roll);
   if (command.type === "resign")
     next.position.result = { winner: other(side), reason: "resignation" };
@@ -120,15 +91,13 @@ function play(
   side: Side,
   roll: () => number,
 ): Match {
-  if (actor(next.position) !== side) throw new Error("It is not your turn.");
+  if (next.position.turn !== side) throw new Error("It is not your turn.");
   // Validate before drawing entropy: invalid requests can never reroll a revival.
   transition(next.position, command.action, 0);
   const die =
     command.action.type === "move" && command.action.revive ? roll() : 0;
   const before = next.position;
   next.position = applyAction(before, command.action, die);
-  if (!next.position.pending)
-    next.clocks[before.pending?.actor ?? side] += next.increment;
   delete next.drawOffer;
   next.revision++;
   return next;

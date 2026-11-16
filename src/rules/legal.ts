@@ -7,7 +7,6 @@ import {
   type Move,
   type Position,
   type Role,
-  type Side,
   type Square,
 } from "./types";
 export const allSquares = Array.from(
@@ -88,13 +87,12 @@ function movesTo(p: Position, from: Square, to: Square): Action[] {
 }
 export function legalActions(p: Position): Action[] {
   if (p.result) return [];
-  if (p.pending) return p.pending.options.map((to) => ({ type: "rescue", to }));
   return Object.entries(p.board)
     .filter(([, piece]) => piece.side === p.turn)
     .flatMap(([from]) => allSquares.flatMap((to) => movesTo(p, from, to)));
 }
 export function adjudicate(p: Position): Position {
-  if (p.pending || p.result) return p;
+  if (p.result) return p;
   if (!legalActions(p).length)
     p.result = {
       winner: inCheck(p, p.turn) ? (p.turn === "w" ? "b" : "w") : null,
@@ -107,9 +105,6 @@ export function adjudicate(p: Position): Position {
   else if (Object.values(p.board).every((piece) => piece.role === "k"))
     p.result = { winner: null, reason: "bare kings" };
   return p;
-}
-export function actor(p: Position): Side {
-  return p.pending?.owner ?? p.turn;
 }
 export function applyAction(p: Position, action: Action, roll = 0): Position {
   return adjudicate(transition(p, action, roll));

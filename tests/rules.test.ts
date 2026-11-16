@@ -142,12 +142,8 @@ test("Tushar and Ethan combo relocates the protected sacrifice, then uses the sa
   add(p, "d4", "q");
   const victim = add(p, "d5", "n");
   add(p, "c4", "b");
-  const pending = transition(p, move("d4", "d5"));
-  assert.equal(pending.pending?.owner, "w");
-  assert.equal(pending.board.d5.role, "q");
-  assert.ok(pending.pending?.options.includes("d4"));
-  const saved = transition(pending, { type: "rescue", to: "d4" });
-  assert.equal(saved.board.d4.id, victim.id);
+  const saved = transition(p, move("d4", "d5"));
+  assert.equal(saved.board.c5.id, victim.id);
   assert.equal(saved.board.d5.role, "q");
   assert.equal(saved.rescueUsed.w, true);
   assert.equal(saved.cooldown.w, 2);
@@ -155,22 +151,37 @@ test("Tushar and Ethan combo relocates the protected sacrifice, then uses the sa
   assert.equal(saved.captured.length, 0);
   saved.turn = "w";
   saved.cooldown.w = 0;
-  assert.equal(transition(saved, move("d5", "d4")).pending, undefined);
+  const twice = transition(saved, move("d5", "c5"));
+  assert.equal(twice.captured.length, 1);
 });
-test("enemy capture pauses for the defender, keeps the attacker, and rejects unsafe rescues", () => {
+test("enemy capture automatically rescues to the nearest safe square without a second action", () => {
   const p = arena();
   p.turn = "b";
   add(p, "d8", "r", "b");
   const victim = add(p, "d5", "n");
   add(p, "c4", "b");
-  const pending = transition(p, move("d8", "d5"));
-  assert.equal(pending.pending?.owner, "w");
-  assert.equal(pending.board.d5.side, "b");
-  assert.ok(pending.pending?.options.includes("e4"));
-  assert.throws(() => transition(pending, { type: "rescue", to: "d4" }));
-  const saved = transition(pending, { type: "rescue", to: "e4" });
-  assert.equal(saved.board.e4.id, victim.id);
+  const saved = transition(p, move("d8", "d5"));
+  assert.equal(saved.board.d5.side, "b");
+  assert.equal(saved.board.c6.id, victim.id);
+  assert.equal(saved.rescueUsed.w, true);
   assert.equal(saved.turn, "w");
+  assert.equal(saved.history.length, 1);
+  const reordered = {
+    ...p,
+    board: Object.fromEntries(Object.entries(p.board).reverse()),
+  };
+  assert.equal(transition(reordered, move("d8", "d5")).board.c6.id, victim.id);
+});
+test("rescue prefers a safe orthogonal square over a diagonal and preserves king safety", () => {
+  const p = arena();
+  add(p, "d4", "q");
+  const victim = add(p, "d5", "n");
+  add(p, "c4", "b");
+  add(p, "c5", "p");
+  const saved = transition(p, move("d4", "d5"));
+  assert.equal(saved.board.d4.id, victim.id);
+  assert.equal(inCheck(saved, "w"), false);
+  assert.equal(inCheck(saved, "b"), false);
 });
 test("a queen attacks every adjacent rescue square, so the victim dies without spending a save", () => {
   const p = arena();
@@ -179,7 +190,6 @@ test("a queen attacks every adjacent rescue square, so the victim dies without s
   add(p, "d5", "n");
   add(p, "c4", "b");
   const result = transition(p, move("d8", "d5"));
-  assert.equal(result.pending, undefined);
   assert.equal(result.rescueUsed.w, false);
   assert.equal(result.captured.length, 1);
 });
@@ -266,13 +276,12 @@ test("en passant captures the correct pawn and allows its bishop-protected rescu
   const double = transition(p, move("d7", "d5"));
   assert.equal(double.enPassant?.target, "d6");
   const captured = transition(double, move("e5", "d6"));
-  assert.equal(captured.pending?.owner, "b");
   assert.equal(captured.board.d5, undefined);
   assert.equal(captured.board.d6.side, "w");
-  const saved = transition(captured, { type: "rescue", to: "c5" });
-  assert.equal(saved.board.c5.role, "p");
-  assert.equal(saved.board.c5.side, "b");
-  assert.equal(saved.enPassant, undefined);
+  assert.equal(captured.board.c5.role, "p");
+  assert.equal(captured.board.c5.side, "b");
+  assert.equal(captured.rescueUsed.b, true);
+  assert.equal(captured.enPassant, undefined);
 });
 test("checkmate uses variant moves and repetition distinguishes remaining charges", () => {
   let p = createPosition({ shuffled: false });
@@ -308,10 +317,10 @@ test("deterministic legal play preserves kings, immutability and unique piece id
     const actions = legalActions(p),
       action = actions[(i * 17) % actions.length],
       before = JSON.stringify(p),
-      actor = p.pending?.actor ?? p.turn;
+      actor = p.turn;
     const next = applyAction(p, action, i % 6);
     assert.equal(JSON.stringify(p), before);
-    if (!next.pending) assert.equal(inCheck(next, actor), false);
+    assert.equal(inCheck(next, actor), false);
     const pieces = [...Object.values(next.board), ...next.captured];
     assert.equal(new Set(pieces.map((v) => v.id)).size, pieces.length);
     assert.equal(pieces.filter((v) => v.role === "k").length, 2);

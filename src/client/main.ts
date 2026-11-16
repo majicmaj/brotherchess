@@ -1,20 +1,19 @@
 import { createPosition } from "../rules/setup";
-import { actor } from "../rules/legal";
 import { other, type Action, type Role, type Side } from "../rules/types";
 import { sideName, type Snapshot } from "../shared/protocol";
 import { Board } from "./board";
+import { powerPreview } from "./powers";
 import { characterPanel, ruleDialog } from "./characters";
 import { button, byId, dialog, el } from "./dom";
 import { lobby } from "./lobby";
 import { api, Connection, recall, type Credential } from "./network";
-import "./style.css";
 import "@lichess-org/chessground/assets/chessground.base.css";
 import "@lichess-org/chessground/assets/chessground.brown.css";
 import "@lichess-org/chessground/assets/chessground.cburnett.css";
+import "./style.css";
 let current: Snapshot | undefined,
   connection: Connection | undefined,
   selected: Role = "k",
-  clockOffset = 0,
   sendPending = false;
 const sidebar = byId("sidebar"),
   notice = byId("notice"),
@@ -48,7 +47,6 @@ function accept(view: Snapshot): void {
   const old = current;
   current = view;
   sendPending = false;
-  clockOffset = view.clockAt - Date.now();
   if (old?.revision !== view.revision) {
     notice.textContent = "";
     document
@@ -61,7 +59,6 @@ function accept(view: Snapshot): void {
   board.update(view);
   renderCharacters();
   renderPlayers();
-  clocks();
   byId<HTMLButtonElement>("cancel").disabled = true;
   renderMatch();
   renderHistory();
@@ -70,11 +67,23 @@ function renderCharacters(): void {
   characterPanel(
     charactersRoot,
     current?.position ?? createPosition({ shuffled: false }),
-    current?.side ?? "w",
+    current?.side ?? current?.position.turn ?? "w",
     selected,
+    current?.actions ?? [],
+    Boolean(current?.started && current?.side),
     (role) => {
-      selected = role;
-      renderCharacters();
+      if (!role) {
+        board.highlight([]);
+        return;
+      }
+      const preview = powerPreview(
+        current?.position ?? createPosition({ shuffled: false }),
+        current?.side ?? current?.position.turn ?? "w",
+        role,
+        current?.actions ?? [],
+        Boolean(current?.started && current?.side),
+      );
+      board.highlight(preview.squares, preview.origins);
     },
   );
 }
@@ -98,19 +107,10 @@ function player(root: HTMLElement, view: Snapshot, side: Side): void {
   );
   const own = view.side === side;
   if (own) name.append(el("span", "you", "you"));
-  const powers = el(
-    "span",
-    "player-powers",
-    view.position.cooldown[side]
-      ? `Powers · ${view.position.cooldown[side]} turns`
-      : "Powers ready",
-  );
-  const clock = el("div", "clock");
-  clock.dataset.side = side;
-  root.append(name, powers, clock);
+  root.append(name);
   root.classList.toggle(
     "active",
-    view.started && !view.position.result && actor(view.position) === side,
+    view.started && !view.position.result && view.position.turn === side,
   );
 }
 function renderMatch(): void {
@@ -134,8 +134,7 @@ function renderMatch(): void {
           await navigator.clipboard.writeText(
             location.origin + "/room/" + view.code,
           );
-          notice.textContent =
-            "Invite link copied. Your seat key stays private.";
+          notice.textContent = "Invite copied.";
         } catch {
           notice.textContent = location.origin + "/room/" + view.code;
         }
@@ -155,11 +154,6 @@ function renderMatch(): void {
   let text = view.started
     ? sideName(view.position.turn) + " to move"
     : "Waiting for your opponent";
-  if (view.position.pending)
-    text =
-      view.position.pending.owner === view.side
-        ? "Ethan’s save · choose a green square"
-        : `${view.names[view.position.pending.owner] ?? sideName(view.position.pending.owner)} is choosing a rescue square`;
   if (view.position.result)
     text = view.position.result.winner
       ? `${view.names[view.position.result.winner]} wins · ${view.position.result.reason}`
@@ -273,25 +267,12 @@ function renderHistory(): void {
   });
   root.scrollTop = root.scrollHeight;
 }
-function clocks(): void {
-  if (!current) return;
-  const now = Date.now() + clockOffset,
-    active = actor(current.position);
-  document.querySelectorAll<HTMLElement>(".clock").forEach((node) => {
-    const side = node.dataset.side as Side;
-    let ms = current!.clocks[side];
-    if (current!.started && !current!.position.result && active === side)
-      ms -= now - current!.clockAt;
-    const seconds = Math.max(0, Math.ceil(ms / 1000));
-    node.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-    node.classList.toggle("low", ms < 30000 && current!.started);
-  });
-}
 function connect(code: string, credential?: Credential): void {
   connection?.close();
   history.replaceState({}, "", "/room/" + code);
   byId("game").dataset.orientation = credential?.side ?? "w";
   board.orientation(credential?.side ?? "w");
+  byId("game").scrollIntoView({ block: "nearest" });
   connection = new Connection(code, credential, {
     state: accept,
     status: (text) => {
@@ -351,5 +332,4 @@ async function start(): Promise<void> {
     lobby(sidebar, enter, watch, showError);
   }
 }
-setInterval(clocks, 100);
 void start();

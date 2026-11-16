@@ -46,8 +46,8 @@ export function rally(p: Position, king: Square, step: Step): void {
   promote(piece, step.to, step.promotion);
   p.board[step.to] = piece;
   p.lastEffect = {
-    name: "Motivational Wank",
-    text: "The pawn does the work. Monkus takes the credit.",
+    name: "Monkus · Rally",
+    text: `Teammate → ${step.to}`,
   };
 }
 export function revival(p: Position, side: Side, count: number): number {
@@ -65,11 +65,9 @@ export function revival(p: Position, side: Side, count: number): number {
   }
   p.revivalUsed[side] = true;
   p.lastEffect = {
-    name: "Please Join VC",
+    name: "BigDoe · Revival",
     roll: count,
-    text: amount
-      ? `BigDoe revived ${amount} pawn${amount === 1 ? "" : "s"}. Someone finally joined the fucking call.`
-      : "BigDoe pinged everyone. Nobody fucking came.",
+    text: `${amount} pawn${amount === 1 ? "" : "s"} revived.`,
   };
   return amount;
 }
@@ -89,16 +87,29 @@ export function rescueOptions(
     return !attacked(probe, at, other(piece.side)) && !inCheck(probe, actor);
   });
 }
-export function restore(p: Position, to: Square): void {
-  const pending = p.pending;
-  if (!pending || !pending.options.includes(to))
-    throw new Error("Choose a highlighted safe square.");
-  p.board[to] = { ...pending.piece, moved: true };
-  p.captured = p.captured.filter((piece) => piece.id !== pending.piece.id);
-  p.rescueUsed[pending.owner] = true;
+// Orthogonal squares are nearer than diagonals; equal distances use board order.
+export function nearestSafeSquare(
+  p: Position,
+  piece: Piece,
+  origin: Square,
+  actor: Side,
+): Square | undefined {
+  const [x, y] = xy(origin);
+  const score = (at: Square): number => {
+    const [u, v] = xy(at);
+    return (u - x) ** 2 + (v - y) ** 2;
+  };
+  return rescueOptions(p, piece, origin, actor).sort(
+    (a, b) => score(a) - score(b) || a.localeCompare(b),
+  )[0];
+}
+export function rescue(p: Position, piece: Piece, to: Square): void {
+  p.board[to] = { ...piece, moved: true };
+  p.captured = p.captured.filter((victim) => victim.id !== piece.id);
+  p.rescueUsed[piece.side] = true;
   p.lastEffect = {
-    name: "Moving the Fucking Goalposts",
-    text: "Your capture was correct. Apparently you misunderstood his position.",
+    name: "Ethan · Auto-save",
+    text: `Saved → ${to}`,
   };
   if (p.enPassant?.target === to) delete p.enPassant;
 }
