@@ -49,7 +49,7 @@ export class Board {
     });
     this.overlay.className = "power-overlay";
     this.overlay.setAttribute("aria-hidden", "true");
-    container.parentElement!.append(this.overlay);
+    this.ground.state.dom.elements.board.append(this.overlay);
     container.addEventListener("pointerdown", () => this.highlight([]));
   }
   update(view: Snapshot): void {
@@ -114,6 +114,9 @@ export class Board {
   }
   highlight(squares: string[], origins: string[] = []): void {
     if (this.extras) return;
+    // Chessground rounds its board to device pixels and rebuilds it on flips.
+    // Use the actual board as the containing block, including after a rebuild.
+    this.ground.state.dom.elements.board.append(this.overlay);
     this.highlighted = [squares, origins];
     this.overlay.replaceChildren();
     for (const at of new Set([...origins, ...squares])) {
