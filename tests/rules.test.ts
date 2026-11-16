@@ -137,7 +137,7 @@ test("Tushar can sacrifice friendly pieces except Monkus", () => {
   p.cooldown.w = 1;
   assert.equal(canMove(p, "d4", "d5"), false);
 });
-test("Tushar and Ethan combo relocates the protected sacrifice, then uses the save exactly once", () => {
+test("Tushar and Ethan combo relocates the protected sacrifice, can save another guarded piece later", () => {
   const p = arena();
   add(p, "d4", "q");
   const victim = add(p, "d5", "n");
@@ -145,14 +145,15 @@ test("Tushar and Ethan combo relocates the protected sacrifice, then uses the sa
   const saved = transition(p, move("d4", "d5"));
   assert.equal(saved.board.c5.id, victim.id);
   assert.equal(saved.board.d5.role, "q");
-  assert.equal(saved.rescueUsed.w, true);
   assert.equal(saved.cooldown.w, 2);
   assert.equal(saved.turn, "b");
   assert.equal(saved.captured.length, 0);
   saved.turn = "w";
   saved.cooldown.w = 0;
+  add(saved, "b4", "b");
   const twice = transition(saved, move("d5", "c5"));
-  assert.equal(twice.captured.length, 1);
+  assert.equal(twice.captured.length, 0);
+  assert.ok(Object.values(twice.board).some((piece) => piece.id === victim.id));
 });
 test("enemy capture automatically rescues to the nearest safe square without a second action", () => {
   const p = arena();
@@ -163,7 +164,6 @@ test("enemy capture automatically rescues to the nearest safe square without a s
   const saved = transition(p, move("d8", "d5"));
   assert.equal(saved.board.d5.side, "b");
   assert.equal(saved.board.c6.id, victim.id);
-  assert.equal(saved.rescueUsed.w, true);
   assert.equal(saved.turn, "w");
   assert.equal(saved.history.length, 1);
   const reordered = {
@@ -183,14 +183,13 @@ test("rescue prefers a safe orthogonal square over a diagonal and preserves king
   assert.equal(inCheck(saved, "w"), false);
   assert.equal(inCheck(saved, "b"), false);
 });
-test("a queen attacks every adjacent rescue square, so the victim dies without spending a save", () => {
+test("a queen attacks every adjacent rescue square, so the victim cannot escape", () => {
   const p = arena();
   p.turn = "b";
   add(p, "d8", "q", "b");
   add(p, "d5", "n");
   add(p, "c4", "b");
   const result = transition(p, move("d8", "d5"));
-  assert.equal(result.rescueUsed.w, false);
   assert.equal(result.captured.length, 1);
 });
 test("BigDoe survives and restores only captured pawns, bounded by the roll and empty home squares", () => {
@@ -280,7 +279,6 @@ test("en passant captures the correct pawn and allows its bishop-protected rescu
   assert.equal(captured.board.d6.side, "w");
   assert.equal(captured.board.c5.role, "p");
   assert.equal(captured.board.c5.side, "b");
-  assert.equal(captured.rescueUsed.b, true);
   assert.equal(captured.enPassant, undefined);
 });
 test("checkmate uses variant moves and repetition distinguishes remaining charges", () => {
@@ -308,7 +306,7 @@ test("checkmate uses variant moves and repetition distinguishes remaining charge
   assert.equal(mate.result?.winner, "w");
   const fresh = createPosition({ shuffled: false }),
     key = positionKey(fresh);
-  fresh.rescueUsed.w = true;
+  fresh.revivalUsed.w = true;
   assert.notEqual(positionKey(fresh), key);
 });
 test("deterministic legal play preserves kings, immutability and unique piece identities", () => {
@@ -357,4 +355,17 @@ test("ordinary and rallied promotions preserve pawn identity and offer all four 
       a.extra.to === "c8",
   );
   assert.equal(choices.length, 4);
+});
+
+test("Ethan can save every guarded non-king role", () => {
+  for (const role of ["p", "n", "b", "r", "q"] as const) {
+    const p = arena();
+    add(p, "d4", "q");
+    const victim = add(p, "d5", role);
+    add(p, "c4", "b");
+    const after = transition(p, move("d4", "d5"));
+    assert.equal(after.board.c5.id, victim.id);
+    assert.equal(after.board.c5.role, role);
+    assert.equal(after.captured.length, 0);
+  }
 });

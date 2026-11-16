@@ -31,7 +31,6 @@ export interface Position {
   turn: Side;
   cooldown: Record<Side, number>;
   cooldownLength: Record<Side, number>;
-  rescueUsed: Record<Side, boolean>;
   revivalUsed: Record<Side, boolean>;
   captured: Piece[];
   enPassant?: { target: Square; pawn: Square };

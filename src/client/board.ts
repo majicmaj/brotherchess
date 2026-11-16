@@ -12,6 +12,7 @@ import {
 } from "../rules/types";
 import type { Snapshot } from "../shared/protocol";
 import { characters, roleNames } from "../shared/characters";
+import { sacrificePreview } from "./sacrifice";
 import { dialog } from "./dom";
 const groundRoles: Record<string, Role> = {
   queen: "q",
@@ -215,18 +216,15 @@ export class Board {
     }
     const victim = view.position.board[ordinary.to];
     if (victim?.side === view.side) {
-      dialog(
-        "Willing sacrifice",
-        `Capture your own ${roleNames[victim.role]}? Ethan may save them.`,
-        [
-          { label: "Cancel", action: () => this.cancel() },
-          {
-            label: "Sacrifice " + roleNames[victim.role],
-            primary: true,
-            action: () => this.play(ordinary),
-          },
-        ],
-      );
+      const preview = sacrificePreview(view.position, ordinary);
+      dialog(preview.title, preview.message, [
+        { label: "Cancel", action: () => this.cancel() },
+        {
+          label: preview.confirm,
+          primary: true,
+          action: () => this.play(ordinary),
+        },
+      ]);
       return;
     }
     this.play(ordinary);

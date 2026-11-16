@@ -22,7 +22,7 @@ all tests offline and fast. Do not introduce UI snapshot tests.
 - scripts: quality and build tools.
 
 Persist every accepted turn before broadcasting. Reject stale revisions and
-unauthorized actions. Reconnection restores the exact board, rescue charge,
+unauthorized actions. Reconnection restores the exact board, bishop protection,
 revival state, cooldown and captured pieces. Never trust client dice. Preserve
 Cloudflare's existing wildcard route; deploy only the exact Brotherchess hostname.
 Never commit credentials, private Discord transcripts, or personal research data.

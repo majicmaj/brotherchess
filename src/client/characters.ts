@@ -88,7 +88,7 @@ export function ruleDialog(): void {
     el(
       "p",
       "rule-note",
-      "Active powers share a cooldown: two ordinary turns. Barb and Ethan are passive. BigDoe and Ethan work once per side. A save needs an empty, unattacked square beside the capture; nearest first, with a fixed tie-break. No safe square = no save.",
+      "Active powers share a cooldown: two ordinary turns. Barb and Ethan are passive. BigDoe revives once per side. Ethan saves every guarded non-king ally. A save needs an empty, unattacked square beside the capture; nearest first, with a fixed tie-break. No safe square = no save.",
     ),
   );
   modal.append(

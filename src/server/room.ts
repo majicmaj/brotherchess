@@ -30,7 +30,11 @@ export class MatchRoom extends DurableObject<Env> {
       if (rows[0]) {
         const stored = JSON.parse(rows[0].data) as Match;
         this.match = upgradeMatch(stored);
-        if ("clocks" in stored || "pending" in stored.position)
+        if (
+          "clocks" in stored ||
+          "pending" in stored.position ||
+          "rescueUsed" in stored.position
+        )
           await this.save(this.match);
       }
     });

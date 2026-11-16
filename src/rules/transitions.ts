@@ -136,8 +136,6 @@ export function positionKey(p: Position): string {
     p.turn,
     p.cooldown.w,
     p.cooldown.b,
-    +p.rescueUsed.w,
-    +p.rescueUsed.b,
     +p.revivalUsed.w,
     +p.revivalUsed.b,
     p.enPassant?.target ?? "-",
@@ -151,7 +149,6 @@ function clonePosition(p: Position): Position {
       Object.entries(p.board).map(([at, piece]) => [at, { ...piece }]),
     ),
     cooldown: { ...p.cooldown },
-    rescueUsed: { ...p.rescueUsed },
     revivalUsed: { ...p.revivalUsed },
     captured: [...p.captured],
     history: [...p.history],
@@ -195,9 +192,7 @@ export function transition(
     captureAt = victimSquare(before, action, original),
     victim = before.board[captureAt];
   const guarded = Boolean(
-    victim &&
-    !before.rescueUsed[victim.side] &&
-    bishopGuard(before, captureAt, victim.side),
+    victim && bishopGuard(before, captureAt, victim.side),
   );
   const piece = p.board[action.from];
   if (victim) {
